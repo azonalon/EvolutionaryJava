@@ -1,0 +1,4 @@
+package renderable;
+class Texture {
+
+}
