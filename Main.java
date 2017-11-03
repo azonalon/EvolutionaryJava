@@ -17,6 +17,7 @@ import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL30.*;
+import static org.lwjgl.opengl.GL45.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
@@ -50,6 +51,7 @@ public class Main {
 
     private void initGraphics() throws IOException {
         pipeline = new ShaderPipeline();
+        glEnable(GL_TEXTURE_2D);
     }
 
 

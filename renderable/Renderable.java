@@ -43,6 +43,7 @@ public class Renderable {
         modelMatrix = new Matrix4f();
         vaoId = glGenVertexArrays();
         glBindVertexArray(vaoId);
+
         positionVbo = glGenBuffers();
         glBindBuffer(GL_ARRAY_BUFFER, positionVbo);
         glBufferData(GL_ARRAY_BUFFER, positions, GL_STATIC_DRAW);
@@ -55,14 +56,18 @@ public class Renderable {
         glBindBuffer(GL_ARRAY_BUFFER, textureCoordinateVbo);
         glBufferData(GL_ARRAY_BUFFER, textureCoordinates, GL_STATIC_DRAW);
         glVertexAttribPointer(shader.textureCoordinateAttributeId, 2,
-                             GL_FLOAT, true, 0, 0L);
+                             GL_FLOAT, false, 0, 0L);
         glEnableVertexAttribArray(shader.textureCoordinateAttributeId);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         indexVbo = glGenBuffers();
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVbo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
         glBindVertexArray(0);
+    }
+
+    public void setTexture(Texture t) {
+        glBindVertexArray(vaoId);
+        glBindTexture(GL_TEXTURE_2D, t.ID);
     }
 
     public void relocate(float x, float y, float z) {

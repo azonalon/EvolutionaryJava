@@ -131,10 +131,10 @@ public class Shader {
 			PointerBuffer strings = BufferUtils.createPointerBuffer(2);
 			IntBuffer lengths = BufferUtils.createIntBuffer(2);
 
-			ByteBuffer preamble = memUTF8("#version " + version + "\n", false);
+			// ByteBuffer preamble = memUTF8("#version " + version + "\n", false);
 
-			strings.put(0, preamble);
-			lengths.put(0, preamble.remaining());
+			// strings.put(0, preamble);
+			// lengths.put(0, preamble.remaining());
 
 			strings.put(1, source);
 			lengths.put(1, source.remaining());

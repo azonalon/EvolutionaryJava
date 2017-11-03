@@ -1,7 +1,14 @@
-#version 130
+#version 330
+
+uniform sampler2D textureSampler;
+
+in vec4 vertexColor;
+in vec2 vertexTextureCoordinate;
 
 out vec4 color;
-in vec4 fragmentColor;
+
 void main() {
-  color = vec4(0,1,1,1);
+  // color = vertexColor;
+  // color = vec4(0,1,1,1);
+  color = texture(textureSampler, vertexTextureCoordinate);
 }

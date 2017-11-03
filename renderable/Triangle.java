@@ -15,13 +15,19 @@ public class Triangle extends Renderable {
         vb.flip();
 
         FloatBuffer uvb = BufferUtils.createFloatBuffer(2 * 3);
-        uvb.put(0.0f).put(1.0f);
+        uvb.put(0.0f).put(0.0f);
         uvb.put(1.0f).put(1.0f);
+        uvb.put(1.0f).put(0.0f);
         uvb.flip();
 
         IntBuffer ib = BufferUtils.createIntBuffer(6);
         ib.put(0).put(1).put(2);
         ib.flip();
         super.setupVertexArray(pipeline, vb, uvb, ib);
+        try {
+            super.setTexture(Texture.fromPng());
+        } catch (Exception e) {
+            System.out.println(e);
+        };
     }
 }

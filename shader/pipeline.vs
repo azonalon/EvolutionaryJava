@@ -1,13 +1,17 @@
-#version 130
+#version 330
 
-in vec3 position;
-in vec2 textureCoordinate;
-in vec4 color;
-out vec4 fragmentColor;
 uniform mat4 modelTransformation;
 uniform mat4 viewTransformation;
 
+in vec3 position;
+in vec4 color;
+in vec2 textureCoordinate;
+
+out vec4 vertexColor;
+out vec2 vertexTextureCoordinate;
+
 void main() {
   gl_Position = viewTransformation * modelTransformation * vec4(position, 1.0);
-  fragmentColor  = color;
+  vertexColor = color;
+  vertexTextureCoordinate = textureCoordinate;
 }
