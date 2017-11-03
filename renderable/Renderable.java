@@ -22,57 +22,46 @@ import org.joml.Matrix4f;
 public class Renderable {
     FloatBuffer vertices; // Edges of polygons
     FloatBuffer colors; // Edges of polygons
+    IntBuffer indices; // indices for indexed drawing
     Matrix4f modelMatrix;
     ShaderPipeline pipeline;
     int modelMatrixLocation;
     int uvs; // Texture coordinates
-    IntBuffer indices; // indices for indexed drawing
     int positionVbo;
     int textureCoordinateVbo;
     int vaoId; // id of corresponding vertex array object
+    int indexVbo;
 
-    public Renderable(ShaderPipeline shader,
-               FloatBuffer vertices,  IntBuffer indices) {
+    protected void setupVertexArray(ShaderPipeline shader,
+               FloatBuffer positions,  FloatBuffer textureCoordinates,
+               IntBuffer indices) {
+
         this.vertices = vertices;
         this.indices = indices;
         this.uvs = uvs;
         this.pipeline = shader;
         modelMatrix = new Matrix4f();
-
-
         vaoId = glGenVertexArrays();
         glBindVertexArray(vaoId);
         positionVbo = glGenBuffers();
-        FloatBuffer fb = BufferUtils.createFloatBuffer(2 * 6);
-        fb.put(-1.0f).put(-1.0f);
-        fb.put(1.0f).put(-1.0f);
-        fb.put(1.0f).put(1.0f);
-        fb.put(1.0f).put(1.0f);
-        fb.put(-1.0f).put(1.0f);
-        fb.put(-1.0f).put(-1.0f);
-        fb.flip();
         glBindBuffer(GL_ARRAY_BUFFER, positionVbo);
-        glBufferData(GL_ARRAY_BUFFER, fb, GL_STATIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, positionVbo);
+        glBufferData(GL_ARRAY_BUFFER, positions, GL_STATIC_DRAW);
         glVertexAttribPointer(shader.positionAttributeId, 2,
                                 GL_FLOAT, false, 0, 0L);
         glEnableVertexAttribArray(shader.positionAttributeId);
 
+
         textureCoordinateVbo = glGenBuffers();
-        fb = BufferUtils.createFloatBuffer(2 * 6);
-        fb.put(0.0f).put(1.0f);
-        fb.put(1.0f).put(1.0f);
-        fb.put(1.0f).put(0.0f);
-        fb.put(1.0f).put(0.0f);
-        fb.put(0.0f).put(0.0f);
-        fb.put(0.0f).put(1.0f);
-        fb.flip();
         glBindBuffer(GL_ARRAY_BUFFER, textureCoordinateVbo);
-        glBufferData(GL_ARRAY_BUFFER, fb, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, textureCoordinates, GL_STATIC_DRAW);
         glVertexAttribPointer(shader.textureCoordinateAttributeId, 2,
                              GL_FLOAT, true, 0, 0L);
         glEnableVertexAttribArray(shader.textureCoordinateAttributeId);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        indexVbo = glGenBuffers();
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVbo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices, GL_STATIC_DRAW);
         glBindVertexArray(0);
     }
 
@@ -84,9 +73,9 @@ public class Renderable {
     }
 
     public void draw() {
-        glBindVertexArray(vaoId);
         pipeline.setModelMatrix(modelMatrix);
-        glDrawArrays(GL_TRIANGLES, 0, 2*6);
+        glBindVertexArray(vaoId);
+        glDrawElements(GL_TRIANGLES, indices.capacity(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
 }

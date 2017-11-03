@@ -60,15 +60,19 @@ public class Main {
 		glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
 
 
-        Renderable r = new Renderable(pipeline, null, null);
+        Square s = new Square(pipeline);
+        Triangle t = new Triangle(pipeline);
+        t.relocate(2, 0, 0);
 
 		// Run the rendering loop until the user has attempted to close
 		// the window or has pressed the ESCAPE key.
 		while ( !glfwWindowShouldClose(window.ID) ) {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
-            r.draw();
-            r.rotateZ(.01f);
+            s.draw();
+            s.rotateZ(.01f);
+            t.draw();
+            t.rotateZ(.01f);
 
             view.updateView();
 			glfwSwapBuffers(window.ID); // swap the color buffers
