@@ -1,4 +1,4 @@
-import java.io.IOException;
+import java.io.*;
 import java.nio.*;
 import org.joml.Matrix4f;
 import org.lwjgl.*;
@@ -52,6 +52,8 @@ public class Main {
     private void initGraphics() throws IOException {
         pipeline = new ShaderPipeline();
         glEnable(GL_TEXTURE_2D);
+        glEnable (GL_BLEND);
+        glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
 
 
@@ -64,6 +66,13 @@ public class Main {
 
         Square s = new Square(pipeline);
         Triangle t = new Triangle(pipeline);
+        try {
+            s.setTexture(Texture.fromFile(new File("./rsc/textures/triangleEye.png")));
+            t.setTexture(Texture.fromFile(new File("./rsc/textures/triangleEye.png")));
+        } catch (IOException e) {
+            System.out.println(e);
+        }
+        // Triangle t = new Triangle(pipeline);
         t.relocate(2, 0, 0);
 
 		// Run the rendering loop until the user has attempted to close
@@ -71,10 +80,10 @@ public class Main {
 		while ( !glfwWindowShouldClose(window.ID) ) {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
-            s.draw();
             s.rotateZ(.01f);
             t.draw();
-            t.rotateZ(.01f);
+            t.rotateZ(.02f);
+            s.draw();
 
             view.updateView();
 			glfwSwapBuffers(window.ID); // swap the color buffers

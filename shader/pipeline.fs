@@ -2,7 +2,7 @@
 
 uniform sampler2D textureSampler;
 
-in vec4 vertexColor;
+// in vec4 vertexColor;
 in vec2 vertexTextureCoordinate;
 
 out vec4 color;

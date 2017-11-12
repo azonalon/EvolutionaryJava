@@ -6,7 +6,7 @@ import shader.*;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 
-public class ShaderPipeline {
+public class ShaderPipeline  {
     public int positionAttributeId;
     public int textureCoordinateAttributeId;
     public int textureLocation;
@@ -18,6 +18,7 @@ public class ShaderPipeline {
         matrixBuffer = BufferUtils.createFloatBuffer(16);
         createShaders();
     }
+
     void createShaders() throws IOException {
         int program = glCreateProgram();
         int vshader = Shader.createShader("./shader/pipeline.vs", GL_VERTEX_SHADER);
@@ -32,11 +33,9 @@ public class ShaderPipeline {
         if (linked == 0)
         throw new AssertionError("Could not link program");
         glUseProgram(program);
-        textureLocation = glGetUniformLocation(program, "tex");
-        glUniform1i(textureLocation, 0);
+
         positionAttributeId = glGetAttribLocation(program, "position");
         textureCoordinateAttributeId = glGetAttribLocation(program, "textureCoordinate");
-        textureCoordinateAttributeId = glGetAttribLocation(program, "color");
         modelTransformationLocation = glGetUniformLocation(program, "modelTransformation");
         viewTransformationLocation = glGetUniformLocation(program, "viewTransformation");
 
