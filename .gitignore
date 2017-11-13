@@ -1,5 +1,4 @@
 *.class
 *.log
-.classpath
 lib/*
 literature
