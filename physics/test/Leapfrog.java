@@ -85,7 +85,7 @@ public class Leapfrog {
         }
     }
     public static void main(String[] args) {
-        DampedHarmonicOscillator l = new Leapfrog.DampedHarmonicOscillator(1, 1, 2 * Math.PI);
-        l.integrate(0, 1, 0, 0.01, 100);
+        DampedHarmonicOscillator l = new Leapfrog.DampedHarmonicOscillator(1, 0, 2 * Math.PI);
+        l.integrate(0, 1, 0, 0.1, 20);
     }
 }
