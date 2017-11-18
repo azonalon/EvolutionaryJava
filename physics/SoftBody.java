@@ -16,7 +16,11 @@ public class SoftBody {
     static int DOWN = 1 << 3;
     static int counter=0;
     static double dt = 0.1;
-    static Consumer<Cell> printCellCoordinates = (Cell c)->System.out.format("%f ", c.x);
+    double energy = 0;
+    static Function<Cell, String> cellStatusReading =
+        (Cell c)->{return String.format("%f ", c.x);};
+    static Function<SoftBody, String> bodyStatusReading =
+        (body)->{return body.totalEnergy() + "";};
 
     SoftBody(Cell[] cells) {
         this.cells = cells;
@@ -33,9 +37,12 @@ public class SoftBody {
 
     void propagateCells() {
         for(Cell c: cells) {
-            printCellCoordinates.accept(c);
+            System.out.print(cellStatusReading.apply(c) + " ");
+            energy += c.L * c.L * c.I /2.0 + c.vx * c.vx * c.m /2.0 + c.vy * c.vy * c.m /2.0;
             c.propagate();
         }
+        System.out.print(bodyStatusReading.apply(this));
+        System.out.println();
     }
 
     void visit(Cell a, int side) {
@@ -53,6 +60,7 @@ public class SoftBody {
         a.fX = 0;
         a.fY = 0;
         a.T  = 0;
+        energy = 0;
         Queue<Cell> q = new ArrayDeque<Cell>();
         Cell[] nextCells = new Cell[] {a.left, a.right, a.up, a.down};
         int[] directions = new int[] {RIGHT, LEFT, DOWN, UP};
@@ -85,34 +93,38 @@ public class SoftBody {
 
         double dx  = - first.x + second.x;
         double dy  = - first.y + second.y;
-        double dLength = Math.sqrt(dx*dx + dy*dy);
-        double phi = Math.asin(dy/dLength);
+        double d = Math.sqrt(dx*dx + dy*dy);
+        double phi = Math.asin(dy/d);
         // double theta1 = Math.tan((first.theta - phi)%PI/2.0) ;
         // double theta2 = Math.tan((second.theta - phi)%PI/2.0);
-        double theta1 = (first.theta - phi);
-        double theta2 = (second.theta - phi);
+        // double theta1 = (first.theta - phi);
+        // double theta2 = (second.theta - phi);
 
-        double tTheta = theta1 + theta2;
+        double tTheta = first.theta - second.theta + 2 * phi;
         // rest length of the spring
         double l = first.r + second.r;
         double E = (first.E + second.E)/2;
         double D = (first.D + second.D)/2;
         double c = (first.c + second.c)/2;
-        double fShear = - 6 * E * l * l * (tTheta);
-        dx = dx / dLength;
-        dy = dy / dLength;
+        double fShear = 2 * E * (tTheta);
+        dx = dx / d;
+        dy = dy / d;
 
         // System.out.format("\n averageK %f \n", averageK);
 
-        System.err.format("%f %f %f\n", phi, first.theta, second.theta);
-        first.fX += (dLength - l) * averageK * dx + fShear * (-1*dy);
-        first.fY += (dLength - l) * averageK * dy + fShear * (   dx);
-        second.fX -= (dLength - l) * averageK * dx + fShear * (-1*dy);
-        second.fY -= (dLength - l) * averageK * dy + fShear * (   dx);
+        System.err.format("%f %f %f\n", fShear, dx, second.theta);
+        first.fX += (d - l) * averageK * dx + fShear * (-1*dy);
+        first.fY += (d - l) * averageK * dy + fShear * (   dx);
+        second.fX -= (d - l) * averageK * dx + fShear * (-1*dy);
+        second.fY -= (d - l) * averageK * dy + fShear * (   dx);
 
         // TODO:  damp relative rotation
-        first.T  += 2 * E * l*l*l * (tTheta + theta1);
-        second.T -= 2 * E * l*l*l * (tTheta + theta2);
+        first.T  += E * (tTheta);
+        second.T += E * (tTheta);
+
+        energy += (d-l)*(d-l)* averageK/2.0;
+        energy += (tTheta * tTheta) * E/2.0;
+
 
         // damping forces
         double vXRelative = first.vx - second.vx;
@@ -128,6 +140,9 @@ public class SoftBody {
         second.fY += c * vYRelative;
     }
 
+    public double totalEnergy() {
+        return energy;
+    }
     public static void main(String[] args) {
         Cell[] cells = null;
         // Cell(Cell left, Cell right, Cell up, Cell down,
@@ -136,8 +151,9 @@ public class SoftBody {
         //      double vx, double vy, double L)
         if("beam oscillation".equals(args[0])) {
             Cell a, b;
-            printCellCoordinates = (c) -> {
-                System.out.format(" %f %f ", c.x, c.y);};
+            bodyStatusReading = (body) -> ("" + body.totalEnergy());
+            cellStatusReading = (c) -> {
+                return String.format(" %f %f ", c.x, c.y);};
             a = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r   , E, index
                          10000, 10000, 0,  2*PI/10000, 0.5 , 1, 0,
@@ -147,13 +163,13 @@ public class SoftBody {
                            //m, I, Z, om0 , r, E, index
                              1, 1, 0, 2 * PI, 0.5, 1, 0,
                            //x, y,th,vx,vy, L
-                             1.0, 0, 0, 0, 1, 0);
+                             1.0, 0, 0, 0, 0.01, 0);
             cells = new Cell[] {a, b};
             a.right = b; b.left = a;
         } else if("orbit".equals(args[0])) {
             Cell a, b;
-            printCellCoordinates = (c) -> {
-                System.out.format(" %f %f ", c.x, c.y);};
+            cellStatusReading = (c) -> {
+                return String.format(" %f %f ", c.x, c.y);};
             a = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r   , E, index
                          10000, 1, 0,  2*PI/10000, 0.5 , 0, 0,
@@ -178,7 +194,8 @@ public class SoftBody {
             a.right = b; b.left = a;
         } else if("basic rotation".equals(args[0])) {
             Cell a, b;
-            printCellCoordinates = (c) -> {System.out.format(" %f %f ", c.x, c.y);};
+            cellStatusReading = (c) -> {
+                return String.format(" %f %f ", c.x, c.y);};
             a = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r  , E, index
                              1, 1, 1, 2*PI, 1, 0, 0,
@@ -212,7 +229,6 @@ public class SoftBody {
             bod.updateForces();
             bod.propagateCells();
             t += dt;
-            System.out.println();
         }
         System.err.println("Number of Calls " + counter);
     }
