@@ -1,11 +1,12 @@
 #!/bin/bash
 javac physics/*.java &&
 
-java -ea physics.SoftBody "beam oscillation" 0.01 10 > tempfile.dat &&
+java -ea physics.SoftBody "beam oscillation" 0.1 500  > tempfile.dat &&
 gnuplot -e "set parametric;\
-plot for [n=2:4:2] 'tempfile.dat' u n:(column(n+1)) ls n pt 1  ps 1;\
+set terminal qt 0;\
+plot for [n=5:7] 'tempfile.dat' u 1:(column(n)) w linespoints ls n;\
 set terminal qt 1;\
-plot for [n=6:6:1] 'tempfile.dat' u 1:(column(n)) ls n pt 1  ps 1;\
+plot for [n=8:8] 'tempfile.dat' u 1:(column(n)) w linespoints ls n;\
 pause -1"
 
 if false; then

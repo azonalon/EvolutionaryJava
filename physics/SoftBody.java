@@ -7,6 +7,9 @@ import static java.lang.Math.sqrt;
 // import static System.out.format;
 
 public class SoftBody {
+    static double sqrd(double a) {
+        return a*a;
+    }
     Cell[] cells;
     int [] cellStates; // these are used in BFS 'update forces' to check
                        // if bond force was calculated
@@ -100,7 +103,7 @@ public class SoftBody {
         // double theta1 = (first.theta - phi);
         // double theta2 = (second.theta - phi);
 
-        double tTheta = first.theta - second.theta + 2 * phi;
+        double tTheta = first.theta - second.theta + phi;
         // rest length of the spring
         double l = first.r + second.r;
         double E = (first.E + second.E)/2;
@@ -112,18 +115,21 @@ public class SoftBody {
 
         // System.out.format("\n averageK %f \n", averageK);
 
-        System.err.format("%f %f %f\n", fShear, dx, second.theta);
-        first.fX += (d - l) * averageK * dx + fShear * (-1*dy);
-        first.fY += (d - l) * averageK * dy + fShear * (   dx);
+        System.err.format("%f %f %f\n", phi, first.theta, second.theta);
+        first.fX += (d - l) * averageK * dx - fShear * (-1*dy);
+        first.fY += (d - l) * averageK * dy - fShear * (   dx);
         second.fX -= (d - l) * averageK * dx + fShear * (-1*dy);
         second.fY -= (d - l) * averageK * dy + fShear * (   dx);
 
         // TODO:  damp relative rotation
-        first.T  += E * (tTheta);
-        second.T += E * (tTheta);
+        first.T  -= E * (tTheta + first.theta);
+        second.T += E * (tTheta - second.theta);
 
         energy += (d-l)*(d-l)* averageK/2.0;
-        energy += (tTheta * tTheta) * E/2.0;
+        energy += E * sqrd(first.theta - second.theta)/2.0;
+        energy += E * sqrd(second.theta - phi)/2.0;
+        energy += E * sqrd(first.theta - phi)/2.0;
+        // energy += E * sqrd(tTheta + second.theta);
 
 
         // damping forces
@@ -153,17 +159,17 @@ public class SoftBody {
             Cell a, b;
             bodyStatusReading = (body) -> ("" + body.totalEnergy());
             cellStatusReading = (c) -> {
-                return String.format(" %f %f ", c.x, c.y);};
+                return String.format("%f %f %f ", c.y, c.theta, c.L);};
             a = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r   , E, index
                          10000, 10000, 0,  2*PI/10000, 0.5 , 1, 0,
                            //x, y,th,vx,vy, L
-                             0, 0, 0, 0, 0, 0);
+                             0, 0, 0, 0, 0, 0.0);
             b = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r, E, index
                              1, 1, 0, 2 * PI, 0.5, 1, 0,
                            //x, y,th,vx,vy, L
-                             1.0, 0, 0, 0, 0.01, 0);
+                             1.0, 0, 0, 0, 0.02, 0);
             cells = new Cell[] {a, b};
             a.right = b; b.left = a;
         } else if("orbit".equals(args[0])) {
