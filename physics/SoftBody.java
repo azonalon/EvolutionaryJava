@@ -103,7 +103,7 @@ public class SoftBody {
         // double theta1 = (first.theta - phi);
         // double theta2 = (second.theta - phi);
 
-        double tTheta =  - first.theta + second.theta + phi;
+        double tTheta =  -first.theta + second.theta + phi;
         // rest length of the spring
         double l = first.r + second.r;
         double E = (first.E + second.E)/2;
@@ -122,8 +122,8 @@ public class SoftBody {
         second.fY -= (d - l) * averageK * dy + fShear * (   dx);
 
         // TODO:  damp relative rotation
-        first.T  += E * (tTheta - second.theta);
-        second.T -= E * (tTheta - first.theta);
+        first.T  += E * (tTheta - first.theta);
+        second.T -= E * (tTheta + second.theta);
 
         energy += (d-l)*(d-l)* averageK/2.0;
         energy += fShear * fShear / 2.0;
