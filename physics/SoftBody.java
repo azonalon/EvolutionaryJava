@@ -103,7 +103,7 @@ public class SoftBody {
         // double theta1 = (first.theta - phi);
         // double theta2 = (second.theta - phi);
 
-        double tTheta = first.theta - second.theta + phi;
+        double tTheta =  - first.theta + second.theta + phi;
         // rest length of the spring
         double l = first.r + second.r;
         double E = (first.E + second.E)/2;
@@ -122,14 +122,13 @@ public class SoftBody {
         second.fY -= (d - l) * averageK * dy + fShear * (   dx);
 
         // TODO:  damp relative rotation
-        first.T  -= E * (tTheta + first.theta);
-        second.T += E * (tTheta - second.theta);
+        first.T  += E * (tTheta - second.theta);
+        second.T -= E * (tTheta - first.theta);
 
         energy += (d-l)*(d-l)* averageK/2.0;
-        energy += E * sqrd(first.theta - second.theta)/2.0;
-        energy += E * sqrd(second.theta - phi)/2.0;
-        energy += E * sqrd(first.theta - phi)/2.0;
-        // energy += E * sqrd(tTheta + second.theta);
+        energy += fShear * fShear / 2.0;
+        energy += E * sqrd(tTheta - second.theta) / 4.0;
+        energy += E * sqrd(tTheta + first.theta) / 4.0;
 
 
         // damping forces
@@ -155,7 +154,24 @@ public class SoftBody {
         //      double m, double I, double zeta, double omega0, double r, double E,
         //      int index, double x, double y, double theta,
         //      double vx, double vy, double L)
-        if("beam oscillation".equals(args[0])) {
+        if("beam oscillation rotation".equals(args[0])) {
+            Cell a, b;
+            bodyStatusReading = (body) -> ("" + body.totalEnergy());
+            cellStatusReading = (c) -> {
+                return String.format("%f %f %f", c.x, c.y, c.theta);};
+            a = new Cell(null, null, null, null,
+                           //m, I, Z, om0 , r   , E, index
+                         10000, 10000, 0,  2*PI/10000, 0.5 , 1, 0,
+                           //x, y,th,vx,vy, L
+                             0, 0, 0, 0, 0, 0.02);
+            b = new Cell(null, null, null, null,
+                           //m, I, Z, om0 , r, E, index
+                             1, 1, 0, 2 * PI, 0.5, 1, 0,
+                           //x, y,th,vx,vy, L
+                             1.0, 0, 0, 0, 0.00, 0);
+            cells = new Cell[] {a, b};
+            a.right = b; b.left = a;
+        } else if("beam oscillation".equals(args[0])) {
             Cell a, b;
             bodyStatusReading = (body) -> ("" + body.totalEnergy());
             cellStatusReading = (c) -> {
@@ -164,7 +180,7 @@ public class SoftBody {
                            //m, I, Z, om0 , r   , E, index
                          10000, 10000, 0,  2*PI/10000, 0.5 , 1, 0,
                            //x, y,th,vx,vy, L
-                             0, 0, 0, 0, 0, 0.0);
+                             0, 0, 0, 0, 0, 0.00);
             b = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r, E, index
                              1, 1, 0, 2 * PI, 0.5, 1, 0,
