@@ -6,8 +6,8 @@ class Cell {
 
     Cell(Cell left, Cell right, Cell up, Cell down,
          double m, double I, double zeta, double omega0, double r, double E,
-         int index, double x, double y, double theta,
-         double vx, double vy, double L) {
+         int index, double x, double y, double theta, double vx, double vy,
+         double L) {
         this.m = m;
         this.I = I;
         this.zeta = zeta;
@@ -21,11 +21,11 @@ class Cell {
         this.E = E;
         this.index = index;
         this.c = 2 * zeta * omega0;
-        this.D = 2 * zeta * Math.sqrt(16 * E * r * r * r / I);
+        this.D = 2 * zeta * Math.sqrt(16 * E * r * r * r);
         this.x = x;
         this.y = y;
         this.L = L;
-        this.theta0 = theta;
+        this.theta = theta;
         this.vx = vx;
         this.vy = vy;
         assert(this.m > 0);

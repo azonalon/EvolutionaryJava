@@ -29,6 +29,9 @@ public class SoftBody {
         this.cells = cells;
         cellStates = new int[cells.length];
     }
+    static double circleMod(double angle) {
+        return angle % PI;
+    }
 
     /**
      * checks if the bond forces between the cells have been added to each cell.
@@ -109,26 +112,25 @@ public class SoftBody {
         double E = (first.E + second.E)/2;
         double D = (first.D + second.D)/2;
         double c = (first.c + second.c)/2;
-        double fShear = 2 * E * (tTheta);
+        double fShear = - 6 * l * l * E * circleMod(first.theta + second.theta - 2 * phi);
         dx = dx / d;
         dy = dy / d;
 
         // System.out.format("\n averageK %f \n", averageK);
 
         System.err.format("%f %f %f\n", phi, first.theta, second.theta);
-        first.fX += (d - l) * averageK * dx - fShear * (-1*dy);
-        first.fY += (d - l) * averageK * dy - fShear * (   dx);
-        second.fX -= (d - l) * averageK * dx + fShear * (-1*dy);
-        second.fY -= (d - l) * averageK * dy + fShear * (   dx);
+        first.fX  += (d - l) * averageK * dx - fShear * (-1*dy);
+        first.fY  += (d - l) * averageK * dy - fShear * (   dx);
+        second.fX -= (d - l) * averageK * dx + 1 * fShear * (-1*dy);
+        second.fY -= (d - l) * averageK * dy + 1 * fShear * (   dx);
 
         // TODO:  damp relative rotation
-        first.T  += E * (tTheta - first.theta);
-        second.T -= E * (tTheta + second.theta);
+        first.T  += 2 * E * l * l * l * circleMod(2 * first.theta + second.theta - 3 * phi);
+        second.T -= 2 * E * l * l * l * circleMod(2 * second.theta + first.theta - 3 * phi);
+
 
         energy += (d-l)*(d-l)* averageK/2.0;
-        energy += fShear * fShear / 2.0;
-        energy += E * sqrd(tTheta - second.theta) / 4.0;
-        energy += E * sqrd(tTheta + first.theta) / 4.0;
+        energy += 2 * l * l * l * E * sqrd(first.theta + second.theta + 2 *phi);
 
 
         // damping forces
@@ -136,6 +138,7 @@ public class SoftBody {
         double vYRelative = first.vy - second.vy;
         // subtract parts orthogonal to direction vector
         double orthogonalFraction = vXRelative * -1 * dy + vYRelative * dx;
+        double dphi = orthogonalFraction/d;
         vXRelative -= orthogonalFraction * -1 * dy;
         vYRelative -= orthogonalFraction * dx;
 
@@ -143,6 +146,8 @@ public class SoftBody {
         first.fY -= c * vYRelative;
         second.fX += c * vXRelative;
         second.fY += c * vYRelative;
+        first.T -= D * (first.L - second.L);
+        second.T -= D * (second.L - first.L);
     }
 
     public double totalEnergy() {
@@ -158,17 +163,17 @@ public class SoftBody {
             Cell a, b;
             bodyStatusReading = (body) -> ("" + body.totalEnergy());
             cellStatusReading = (c) -> {
-                return String.format("%f %f %f", c.x, c.y, c.theta);};
+                return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
             a = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r   , E, index
-                         10000, 10000, 0,  2*PI/10000, 0.5 , 1, 0,
+                         10000, 10000, 1,  2*PI/10000, 0.5 , 1, 0,
                            //x, y,th,vx,vy, L
-                             0, 0, 0, 0, 0, 0.02);
+                             0, 0, PI/2, 0, 0, 0.00);
             b = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r, E, index
-                             1, 1, 0, 2 * PI, 0.5, 1, 0,
+                             1, 1, 1, 2 * PI, 0.5, 1, 0,
                            //x, y,th,vx,vy, L
-                             1.0, 0, 0, 0, 0.00, 0);
+                             0.0, 1.0, PI/2, 0.1, 0, 0.0);
             cells = new Cell[] {a, b};
             a.right = b; b.left = a;
         } else if("beam oscillation".equals(args[0])) {
