@@ -14,12 +14,14 @@ public class SoftBody {
     int [] cellStates; // these are used in BFS 'update forces' to check
                        // if bond force was calculated
     static int LEFT = 1 << 0;
+    static double phi0;
     static int RIGHT= 1 << 1;
     static int UP   = 1 << 2;
     static int DOWN = 1 << 3;
     static int counter=0;
     static double dt = 0.1;
     double energy = 0;
+    static boolean startProgram = true;
     static Function<Cell, String> cellStatusReading =
         (Cell c)->{return String.format("%f ", c.x);};
     static Function<SoftBody, String> bodyStatusReading =
@@ -31,6 +33,9 @@ public class SoftBody {
     }
     static double circleMod(double angle) {
         return angle % PI;
+    }
+    static double harmonicMean(double a, double b) {
+        return 2 * a * b / (a + b + 1e-9);
     }
 
     /**
@@ -95,42 +100,45 @@ public class SoftBody {
     };
 
     void addBondForces(Cell first, Cell second) {
-        double averageK = (first.k + second.k)/2;
 
         double dx  = - first.x + second.x;
         double dy  = - first.y + second.y;
         double d = Math.sqrt(dx*dx + dy*dy);
         double phi = Math.asin(dy/d);
-        // double theta1 = Math.tan((first.theta - phi)%PI/2.0) ;
-        // double theta2 = Math.tan((second.theta - phi)%PI/2.0);
-        // double theta1 = (first.theta - phi);
-        // double theta2 = (second.theta - phi);
+        double dphi = phi - phi0;
+        phi0 = phi;
 
-        double tTheta =  -first.theta + second.theta + phi;
+        // double tTheta =  -first.theta + second.theta + phi;
         // rest length of the spring
+        double k = harmonicMean(first.k, second.k);
+        double E = harmonicMean(first.E, second.E);
+        double D = harmonicMean(first.D, second.D);
+        double c = harmonicMean(first.c, second.c);
         double l = first.r + second.r;
-        double E = (first.E + second.E)/2;
-        double D = (first.D + second.D)/2;
-        double c = (first.c + second.c)/2;
         double fShear = - 6 * l * l * E * circleMod(first.theta + second.theta - 2 * phi);
         dx = dx / d;
         dy = dy / d;
 
-        // System.out.format("\n averageK %f \n", averageK);
 
-        System.err.format("%f %f %f\n", phi, first.theta, second.theta);
-        first.fX  += (d - l) * averageK * dx - fShear * (-1*dy);
-        first.fY  += (d - l) * averageK * dy - fShear * (   dx);
-        second.fX -= (d - l) * averageK * dx + 1 * fShear * (-1*dy);
-        second.fY -= (d - l) * averageK * dy + 1 * fShear * (   dx);
+        // System.err.format("%f %f %f\n", phi, first.theta, second.theta);
+        first.fX  += (d - l) * k * dx - fShear * (-1*dy);
+        first.fY  += (d - l) * k * dy - fShear * (   dx);
+        second.fX -= (d - l) * k * dx + 1 * fShear * (-1*dy);
+        second.fY -= (d - l) * k * dy + 1 * fShear * (   dx);
 
         // TODO:  damp relative rotation
         first.T  += 2 * E * l * l * l * circleMod(2 * first.theta + second.theta - 3 * phi);
         second.T -= 2 * E * l * l * l * circleMod(2 * second.theta + first.theta - 3 * phi);
 
 
-        energy += (d-l)*(d-l)* averageK/2.0;
+        energy += (d-l)*(d-l)* k/2.0;
         energy += 2 * l * l * l * E * sqrd(first.theta + second.theta + 2 *phi);
+
+        if(startProgram == true) {
+            System.err.format("Parameters: k=%f, E=%f, D=%f, c=%f, l=%f\n",
+                                k, E, D, c, l);
+            startProgram = false;
+        }
 
 
         // damping forces
@@ -138,9 +146,12 @@ public class SoftBody {
         double vYRelative = first.vy - second.vy;
         // subtract parts orthogonal to direction vector
         double orthogonalFraction = vXRelative * -1 * dy + vYRelative * dx;
-        double dphi = orthogonalFraction/d;
-        vXRelative -= orthogonalFraction * -1 * dy;
-        vYRelative -= orthogonalFraction * dx;
+        double dphicalc = -Math.asin(orthogonalFraction * dt/d)/dt;
+        double shearDamping = 0.05 * D * (first.L - dphicalc + second.L - dphicalc);
+        orthogonalFraction -= shearDamping;
+        vXRelative -=  orthogonalFraction * -1 * dy;
+        vYRelative -=  orthogonalFraction * dx;
+        System.err.format("orth vel.: %f, Phicalc: %f, orth Damping: %f\n", orthogonalFraction, dphicalc, shearDamping);
 
         first.fX -= c * vXRelative;
         first.fY -= c * vYRelative;
@@ -166,14 +177,14 @@ public class SoftBody {
                 return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
             a = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r   , E, index
-                         10000, 10000, 1,  2*PI/10000, 0.5 , 1, 0,
+                         10000, 10000, 1,  1, 0.5 , 1, 0,
                            //x, y,th,vx,vy, L
-                             0, 0, PI/2, 0, 0, 0.00);
+                             0, 0, PI/2, 0, 0, -0.0 * 2 * PI);
             b = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r, E, index
-                             1, 1, 1, 2 * PI, 0.5, 1, 0,
+                             1, 1, 1, 1, 0.5, 1, 0,
                            //x, y,th,vx,vy, L
-                             0.0, 1.0, PI/2, 0.1, 0, 0.0);
+                             0.0, 1.0, PI/2, 0.1 * 2*PI, 0, -0.0 * 2*PI);
             cells = new Cell[] {a, b};
             a.right = b; b.left = a;
         } else if("beam oscillation".equals(args[0])) {
