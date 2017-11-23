@@ -1,6 +1,7 @@
 package physics;
 import physics.*;
 import java.util.*;
+// import util.Math;
 import java.util.function.*;
 import static java.lang.Math.PI;
 import static java.lang.Math.sqrt;
@@ -11,13 +12,6 @@ public class SoftBody {
     SoftBody(Cell[] cells, Bond[] bonds) {
         this.cells = cells;
         this.bonds = bonds;
-        // cellStates = new int[cells.length];
-        // for(int i=0; i<cells.length; i++) {
-        //     cells[i].index = i;
-        // }
-        // bondProperties = new Hashtable<Integer, Bond>();
-        // forEachBond(
-        //     (a, b) -> bondProperties.put( bondKey(a, b), harmonicAverageBond(a, b) ) );
     }
 
     static Bond harmonicAverageBond(Cell a, Cell b, double unstressedAngle) {
@@ -41,6 +35,9 @@ public class SoftBody {
     Cell[] cells;
     Bond[] bonds;
     double energy = 0;
+    static double ka=0, kb=0, kc=0.2, kd=0.2;
+    static double[] energies;
+    static int stepCounter=0;
 
     /*
      * STATIC methods
@@ -96,6 +93,7 @@ public class SoftBody {
         }
         System.out.print(bodyStatusReading.apply(this));
         System.out.println();
+        stepCounter++;
     }
 
     void updateForces() {
@@ -131,24 +129,26 @@ public class SoftBody {
         }
         b.phi0 = phi;
         phi += - b.unstressedAngle + b.rotationCounter * 2 * PI;
-        double fShear = - 6 * l * l * E * circleMod(first.theta + second.theta - 2 * phi);
+        double fShear = - 6 * l * l * E * (first.theta + second.theta - 2 * phi);
         assert(d>0.01);
 
 
-        first.fX  += (d - l) * k * dx - fShear * (-1*dy);
-        first.fY  += (d - l) * k * dy - fShear * (   dx);
+        first.fX  += (d - l) * k * dx + fShear * (-1*dy);
+        first.fY  += (d - l) * k * dy + fShear * (   dx);
         second.fX -= (d - l) * k * dx + fShear * (-1*dy);
         second.fY -= (d - l) * k * dy + fShear * (   dx);
 
-        first.T  -= 2 * E * l * l * l * circleMod(2 * first.theta + second.theta - 3 * phi);
-        second.T -= 2 * E * l * l * l * circleMod(2 * second.theta + first.theta - 3 * phi);
+        first.T  -= 2 * E * l * l * l * (2 * first.theta + second.theta - 3 * phi);
+        second.T -= 2 * E * l * l * l * (2 * second.theta + first.theta - 3 * phi);
 
 
         energy += (d-l)*(d-l)* k/2.0;
-        // energy += ka * l * l * l * E * sqrd(first.theta + second.theta - 2 * phi);
-        // energy += kb * l * l * E * sqrd(first.theta + second.theta - 2 * phi);
-        // energy += kc * E * l * l * l * sqrd(2 * first.theta + second.theta - 3 * phi);
-        // energy += kd * E * l * l * l * sqrd(2 * second.theta + first.theta - 3 * phi);
+        energy += ka * l * l * l * E * sqrd(first.theta + second.theta - 2 * phi);
+        energy += kb * l * l * E * sqrd(first.theta + second.theta - 2 * phi);
+        energy += kc * E * l * l * l * sqrd(2 * first.theta + second.theta - 3 * phi);
+        energy += kd * E * l * l * l * sqrd(2 * second.theta + first.theta - 3 * phi);
+        // kc = 0.2
+        // kd = 0.2
 
         if(startProgram == true) {
             System.err.format("Parameters: k=%f, E=%f, D=%f, c=%f, l=%f, m1=%f, m2=%f\n",
@@ -183,27 +183,51 @@ public class SoftBody {
     public double totalEnergy() {
         return energy;
     }
+
     public static void main(String[] args) {
         Cell[] cells = null;
         Bond[] bonds = null;
 
-        if("beam oscillation rotation".equals(args[0])) {
+        if("symmetric rotation oscillation".equals(args[0])) {
+            Cell a, b;
+            bodyStatusReading = (body) -> ("" + body.totalEnergy());
+            cellStatusReading = (c) -> {
+                return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
+            a = new Cell(null, null, null, null,
+                           //m, I, Z, om0 , r   , E,
+                           1, 1, 1, 1, 0.5 , 1,
+                           //x, y,vx,vy, L
+                           -0.5, 0, 0, -1, -0.0 * 2 * PI);
+            b = new Cell(null, null, null, null,
+                           //m, I, Z, om0 , r, E,
+                             1, 1, 1, 1, 0.5, 0.1,
+                           //x, y,vx,vy, L
+                             0.5, 0, 0.0, 1, 0.0 * 2*PI);
+            cells = new Cell[] {a, b};
+            bonds = new Bond[] {harmonicAverageBond(a, b, 0.0)};
+            dt = Double.parseDouble(args[1]);
+            int nSteps = Integer.parseInt(args[2]);
+            testSimulation(cells, bonds, nSteps);
+        } else if("beam oscillation rotation".equals(args[0])) {
             Cell a, b;
             bodyStatusReading = (body) -> ("" + body.totalEnergy());
             cellStatusReading = (c) -> {
                 return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
             a = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r   , E, index
-                           10000, 10000, 0, 1, 0.5 , 1,
+                           10000, 10000, 1, 1, 0.5 , 1,
                            //x, y,vx,vy, L
                            0, 0, 0, 0, -0.0 * 2 * PI);
             b = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r, E,
-                             1, 1, 0, 1, 0.5, 1,
+                             1, 1, 1, 1, 0.5, 1,
                            //x, y,vx,vy, L
                              0, -1, 0.3, 0.0, 0.0 * 2*PI);
             cells = new Cell[] {a, b};
             bonds = new Bond[] {harmonicAverageBond(a, b, 0.0)};
+            dt = Double.parseDouble(args[1]);
+            int nSteps = Integer.parseInt(args[2]);
+            testSimulation(cells, bonds, nSteps);
         } else if("beam oscillation".equals(args[0])) {
             Cell a, b;
             bodyStatusReading = (body) -> ("" + body.totalEnergy());
@@ -221,6 +245,9 @@ public class SoftBody {
                              1.0, 0, 0, 0.02, 0);
             cells = new Cell[] {a, b};
             bonds = new Bond[] {harmonicAverageBond(a, b, 0.0)};
+            dt = Double.parseDouble(args[1]);
+            int nSteps = Integer.parseInt(args[2]);
+            testSimulation(cells, bonds, nSteps);
         } else if("orbit".equals(args[0])) {
             Cell a, b;
             cellStatusReading = (c) -> {
@@ -238,6 +265,9 @@ public class SoftBody {
             cells = new Cell[] {a, b};
             bonds = new Bond[] {harmonicAverageBond(a, b, 0.0)};
             a.right = b; b.left = a;
+            dt = Double.parseDouble(args[1]);
+            int nSteps = Integer.parseInt(args[2]);
+            testSimulation(cells, bonds, nSteps);
         } else if("relative motion".equals(args[0])) {
             Cell a, b;
             a = new Cell(null, null, null, null,
@@ -249,6 +279,9 @@ public class SoftBody {
             cells = new Cell[] {a, b};
             bonds = new Bond[] {harmonicAverageBond(a, b, 0.0)};
             a.right = b; b.left = a;
+            dt = Double.parseDouble(args[1]);
+            int nSteps = Integer.parseInt(args[2]);
+            testSimulation(cells, bonds, nSteps);
         } else if("basic rotation".equals(args[0])) {
             Cell a, b;
             cellStatusReading = (c) -> {
@@ -266,6 +299,9 @@ public class SoftBody {
             cells = new Cell[] {a, b};
             bonds = new Bond[] {harmonicAverageBond(a, b, 0.0)};
             a.right = b; b.left = a;
+            dt = Double.parseDouble(args[1]);
+            int nSteps = Integer.parseInt(args[2]);
+            testSimulation(cells, bonds, nSteps);
         } else if("relative motion damping".equals(args[0])) {
             Cell a, b;
             a = new Cell(null, null, null, null,
@@ -277,11 +313,34 @@ public class SoftBody {
             cells = new Cell[] {a, b};
             bonds = new Bond[] {harmonicAverageBond(a, b, 0.0)};
             a.right = b; b.left = a;
+            dt = Double.parseDouble(args[1]);
+            int nSteps = Integer.parseInt(args[2]);
+            testSimulation(cells, bonds, nSteps);
+        } else if("minimize".equals(args[0])) {
+            Cell a, b;
+            a = new Cell(null, null, null, null, 10000, 10000, 0, 1, 0.5 , 1, 0, 0, 0, 0, -0.0 * 2 * PI);
+            b = new Cell(null, null, null, null, 1, 1, 0, 1, 0.5, 1, 0, -1, 0.3, 0.0, 0.0 * 2*PI);
+            cells = new Cell[] {a, b};
+            bonds = new Bond[] {harmonicAverageBond(a, b, 0.0)};
+            dt = 0.001;
+            int nSteps = 100;
+            double[] energies = new double[nSteps+1];
+            ka = Double.parseDouble(args[1]);
+            kb = Double.parseDouble(args[2]);
+            kc = Double.parseDouble(args[3]);
+            kd = Double.parseDouble(args[4]);
+            bodyStatusReading = (body) -> {
+                energies[stepCounter] = body.totalEnergy();
+                return "" + energies[stepCounter];
+            };
+            cellStatusReading = (c) -> { return "";};
+            testSimulation(cells, bonds, nSteps);
+            System.err.println("Run finished with " + Arrays.toString(energies));
+            System.out.println(util.Math.standardDeviation(energies));
         }
-
+    }
+    static void testSimulation(Cell[] cells, Bond[] bonds, int nSteps) {
         SoftBody bod = new SoftBody(cells, bonds);
-        dt = Double.parseDouble(args[1]);
-        int nSteps = Integer.parseInt(args[2]);
         double t = 0;
         for(int i = 0; i < nSteps; i++) {
             System.out.format("%f ", t);

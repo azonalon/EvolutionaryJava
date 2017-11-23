@@ -1,24 +1,22 @@
-#!/bin/python
+#!/bin/python3
 import sys
 import time
 import subprocess as sp
 import subprocess
 import pty
 import os
+from scipy.optimize import minimize, basinhopping
 
-i, o = pty.openpty()
+def f(x):
+    r=sp.run(["java", "-ea", "physics.SoftBody", "minimize",
+              str(x[0]),str(x[1]),str(x[2]),str(x[3])],
+             stdout=sp.PIPE, stderr=sp.PIPE)
+    return float(r.stdout.split(b"\n")[-2])
 
-proc = subprocess.Popen(['gnuplot'], shell=True, stdin=i)
-os.write(i, b"plot sin(x);pause 4\n")
-# print(str(os.read(o, 100)))
-while True:
-    print('write please')
-    t = sys.stdin.readline().encode()
-    os.write(i, t)
-    print(t, 'written')
-
-import math
-print(math.atan2(0, 1));
-print(math.atan2(1, 0));
-print(math.atan2(-0.01, -1));
-print(math.atan2(-1, 0));
+min = minimize(f, x0=[1, 1, 1, 1],
+         bounds=((0, 10),(0, 10), (0, 10), (0, 10)) )
+min2 = basinhopping(f, x0=[1, 1, 1, 1])
+f(min.x)
+f([0, 0, 0.2, 0.2])
+min.x
+f(0, 2, 0, 3)

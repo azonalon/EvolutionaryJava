@@ -1,1 +1,2 @@
 .:./lib/lwjgl/*:./lib/lwjgl-opengl/*:./lib/lwjgl-glfw/*:./lib/joml-1.9.6.jar:.:./shader/*:./world/*:./window/*
+./util/*
