@@ -1,11 +1,13 @@
 #!/bin/bash
 javac -g physics/*.java
 if [ 0 -eq $? ]; then
-    java -ea physics.SoftBody "symmetric rotation oscillation" 0.1 340  > tempfile.dat &&
+    java -ea physics.SoftBody "symmetric rotation oscillation" 0.1 140  > tempfile.dat &&
     gnuplot -e "set parametric;\
     set terminal qt 0;\
     plot 'tempfile.dat' u 7:(column(8)) w linespoints ls 1, \
          'tempfile.dat' u 2:(column(3)) w linespoints ls 2 ;\
+    set terminal qt 1;\
+    plot 'tempfile.dat' u 1:(column(12)) w linespoints ls 0; \
     pause -1"
 
     exit 0

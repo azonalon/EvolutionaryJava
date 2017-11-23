@@ -147,8 +147,6 @@ public class SoftBody {
         energy += kb * l * l * E * sqrd(first.theta + second.theta - 2 * phi);
         energy += kc * E * l * l * l * sqrd(2 * first.theta + second.theta - 3 * phi);
         energy += kd * E * l * l * l * sqrd(2 * second.theta + first.theta - 3 * phi);
-        // kc = 0.2
-        // kd = 0.2
 
         if(startProgram == true) {
             System.err.format("Parameters: k=%f, E=%f, D=%f, c=%f, l=%f, m1=%f, m2=%f\n",
@@ -163,7 +161,7 @@ public class SoftBody {
         // subtract parts orthogonal to direction vector
         double orthogonalFraction = vXRelative * -1 * dy + vYRelative * dx;
         double dphicalc = -Math.asin(orthogonalFraction * dt/d);
-        double shearDamping = 0.05 * D * (first.L - dphicalc + second.L - dphicalc);
+        double shearDamping = 0.00 * D * (first.L - dphicalc + second.L - dphicalc);
         orthogonalFraction -= shearDamping;
         vXRelative -=  orthogonalFraction * -1 * dy;
         vYRelative -=  orthogonalFraction * dx;
@@ -195,12 +193,12 @@ public class SoftBody {
                 return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
             a = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r   , E,
-                           1, 1, 1, 1, 0.5 , 1,
+                           1, 1, 0, 1, 0.5 , 1,
                            //x, y,vx,vy, L
                            -0.5, 0, 0, -1, -0.0 * 2 * PI);
             b = new Cell(null, null, null, null,
                            //m, I, Z, om0 , r, E,
-                             1, 1, 1, 1, 0.5, 0.1,
+                             1, 1, 0, 1, 0.5, 0.1,
                            //x, y,vx,vy, L
                              0.5, 0, 0.0, 1, 0.0 * 2*PI);
             cells = new Cell[] {a, b};
