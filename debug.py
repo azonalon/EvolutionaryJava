@@ -16,3 +16,9 @@ while True:
     t = sys.stdin.readline().encode()
     os.write(i, t)
     print(t, 'written')
+
+import math
+print(math.atan2(0, 1));
+print(math.atan2(1, 0));
+print(math.atan2(-0.01, -1));
+print(math.atan2(-1, 0));
