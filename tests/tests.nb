@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[     64266,       1630]
-NotebookOptionsPosition[     62697,       1574]
-NotebookOutlinePosition[     63030,       1589]
-CellTagsIndexPosition[     62987,       1586]
+NotebookDataLength[     65310,       1665]
+NotebookOptionsPosition[     63626,       1605]
+NotebookOutlinePosition[     63959,       1620]
+CellTagsIndexPosition[     63916,       1617]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -1570,6 +1570,37 @@ Cell[BoxData[
  CellChangeTimes->{
   3.720264867661003*^9, 3.720264994078643*^9, {3.720265147826877*^9, 
    3.7202651618919983`*^9}, {3.7202696759747257`*^9, 3.72026968446078*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{
+  SqrtBox[
+   FractionBox[
+    RowBox[{"Integrate", "[", 
+     RowBox[{
+      SuperscriptBox[
+       RowBox[{"(", 
+        RowBox[{"a", "-", 
+         RowBox[{"b", " ", 
+          RowBox[{"Sin", "[", "x", "]"}]}]}], ")"}], "2"], ",", 
+      RowBox[{"{", 
+       RowBox[{"x", ",", "0", ",", 
+        RowBox[{"2", "\[Pi]"}]}], "}"}]}], "]"}], 
+    RowBox[{"2", "\[Pi]"}]]], "/.", 
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"a", "\[Rule]", "0.85"}], ",", 
+    RowBox[{"b", "\[Rule]", "0.15"}]}], "}"}]}]], "Input",
+ CellChangeTimes->{{3.720463053795662*^9, 3.720463073435657*^9}, {
+  3.7204631073263273`*^9, 3.7204631725174313`*^9}, {3.720463218869966*^9, 
+  3.72046323176645*^9}}],
+
+Cell[BoxData["0.8565920849505906`"], "Output",
+ CellChangeTimes->{
+  3.720463074794622*^9, {3.7204631091588297`*^9, 3.720463131618198*^9}, 
+   3.720463172948473*^9, 3.7204632324625196`*^9}]
 }, Open  ]]
 },
 WindowSize->{956, 1058},
@@ -1631,6 +1662,10 @@ Cell[60150, 1493, 139, 3, 32, "Output"]
 Cell[CellGroupData[{
 Cell[60326, 1501, 1024, 25, 71, "Input"],
 Cell[61353, 1528, 1328, 43, 92, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[62718, 1576, 700, 21, 91, "Input"],
+Cell[63421, 1599, 189, 3, 30, "Output"]
 }, Open  ]]
 }
 ]

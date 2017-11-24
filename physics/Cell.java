@@ -1,10 +1,10 @@
 package physics;
 import static physics.SoftBody.dt;
 
-class Cell {
+public class Cell {
     Cell left, right, up, down;
 
-    Cell(Cell left, Cell right, Cell up, Cell down,
+    public Cell(Cell left, Cell right, Cell up, Cell down,
          double m, double I, double zeta, double omega0, double r, double E,
          double x, double y, double vx, double vy,
          double L) {
@@ -54,7 +54,7 @@ class Cell {
                m, I, D, c, k, index);
     }
 
-    double x, y, vx, vy, vx0, vy0, x0, y0, L, L0, theta, theta0, m=1, I=1, zeta, omega0, r=1,
+    public double x, y, vx, vy, vx0, vy0, x0, y0, L, L0, theta, theta0, m=1, I=1, zeta, omega0, r=1,
            fX=0, fY=0, T, E, k, c, D;
     public int index;
 }
