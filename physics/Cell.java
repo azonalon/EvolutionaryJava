@@ -1,10 +1,27 @@
 package physics;
 import static physics.SoftBody.dt;
 
-public class Cell {
-    Cell left, right, up, down;
+enum CellCulture {
+    STIFF(1, 1, 1, 1, 10, 10),
+    SOFT(1, 1, 1, 1, .1, .1),
+    NORMAL(1, 1, 1, 1, 1, 1),
+    HEAVY(10, 10, 1, 1, 1, 1);
+    public Cell grow() {
+        return new Cell(r, m, I, zeta, omega0, E);
+    }
+    CellCulture(double r, double m, double I, double zeta, double omega0, double E) {
+        this.r = r;
+        this.m = m;
+        this.I = I;
+        this.zeta = zeta;
+        this.omega0 = omega0;
+        this.E = E;
+    }
+    double r, m , I, zeta, omega0, E;
+}
 
-    public Cell(Cell left, Cell right, Cell up, Cell down,
+public class Cell {
+    public Cell(
          double m, double I, double zeta, double omega0, double r, double E,
          double x, double y, double vx, double vy,
          double L) {
@@ -14,10 +31,33 @@ public class Cell {
         this.r = r;
         this.omega0 = omega0;
         this.k = omega0;
-        this.down = down;
-        this.left = left;
-        this.right = right;
-        this.up = up;
+        this.E = E;
+        this.c = 2 * zeta * Math.sqrt(m * k);
+        this.D = 2 * zeta * Math.sqrt(E * I);
+        this.x = x;
+        this.y = y;
+        this.L = L;
+        this.vx = vx;
+        this.vy = vy;
+        assert(this.m > 0);
+        assert(this.I > 0);
+    }
+
+    public void setPosition(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+    public void setAngle(double theta) {
+        this.theta = theta;
+    }
+
+    public Cell(double r, double m, double I, double zeta, double omega0, double E) {
+        this.m = m;
+        this.I = I;
+        this.zeta = zeta;
+        this.r = r;
+        this.omega0 = omega0;
+        this.k = omega0;
         this.E = E;
         this.c = 2 * zeta * Math.sqrt(m * k);
         this.D = 2 * zeta * Math.sqrt(E * I);
@@ -55,6 +95,6 @@ public class Cell {
     }
 
     public double x, y, vx, vy, vx0, vy0, x0, y0, L, L0, theta, theta0, m=1, I=1, zeta, omega0, r=1,
-           fX=0, fY=0, T, E, k, c, D;
+           fX, fY, T, E, k, c, D;
     public int index;
 }

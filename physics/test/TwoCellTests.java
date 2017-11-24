@@ -12,18 +12,37 @@ public class TwoCellTests
     public static void main(String[] args) {
             Cell[] cells = null;
             Bond[] bonds = null;
-            if("damped symmetric rotation oscillation".equals(args[0])) {
+            if("damped relative rotation".equals(args[0])) {
                 Cell a, b;
                 SoftBody.bodyStatusReading = (body) -> ("" + body.totalEnergy() + " " + phi0);
                 cellStatusReading = (c) -> { return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
-                a = new Cell(null, null, null, null,
+                a = new Cell(
                                //m, I, Z, om0 , r   , E,
-                               1, .1, 1, 1, 0.5 , .1,
+                               1, 1, 1, 1, 0.5 , .1,
+                               //x, y,vx,vy, L
+                               -0.5, 0, 0, 0, 1);
+                b = new Cell(
+                               //m, I, Z, om0 , r, E,
+                                 1, 1, 1, 1, 0.5, .1,
+                               //x, y,vx,vy, L
+                                 0.5, 0, 0.0, 0, -0.5);
+                cells = new Cell[] {a, b};
+                bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
+                dt = Double.parseDouble(args[1]);
+                int nSteps = Integer.parseInt(args[2]);
+                testSimulation(cells, bonds, nSteps);
+            } else if("damped symmetric rotation oscillation".equals(args[0])) {
+                Cell a, b;
+                SoftBody.bodyStatusReading = (body) -> ("" + body.totalEnergy() + " " + phi0);
+                cellStatusReading = (c) -> { return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
+                a = new Cell(
+                               //m, I, Z, om0 , r   , E,
+                               1, 1, 1, 1, 0.5 , .1,
                                //x, y,vx,vy, L
                                -0.5, 0, 0, -1, 0);
-                b = new Cell(null, null, null, null,
+                b = new Cell(
                                //m, I, Z, om0 , r, E,
-                                 1, .1, 1, 1, 0.5, .1,
+                                 1, 1, 1, 1, 0.5, .1,
                                //x, y,vx,vy, L
                                  0.5, 0, 0.0, 1, 0);
                 cells = new Cell[] {a, b};
@@ -35,12 +54,12 @@ public class TwoCellTests
                 Cell a, b;
                 SoftBody.bodyStatusReading = (body) -> ("" + body.totalEnergy() + " " + phi0);
                 cellStatusReading = (c) -> { return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
-                a = new Cell(null, null, null, null,
+                a = new Cell(
                                //m, I, Z, om0 , r   , E,
                                1, 1, 0, 1, 0.5 , 1,
                                //x, y,vx,vy, L
                                -0.5, 0, 0, -1, -0.0 * 2 * PI);
-                b = new Cell(null, null, null, null,
+                b = new Cell(
                                //m, I, Z, om0 , r, E,
                                  1, 1, 0, 1, 0.5, 0.1,
                                //x, y,vx,vy, L
@@ -55,12 +74,12 @@ public class TwoCellTests
                 bodyStatusReading = (body) -> ("" + body.totalEnergy());
                 cellStatusReading = (c) -> {
                     return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
-                a = new Cell(null, null, null, null,
+                a = new Cell(
                                //m, I, Z, om0 , r   , E, index
                                10000, 10000, 1, 1, 0.5 , 1,
                                //x, y,vx,vy, L
                                0, 0, 0, 0, -0.0 * 2 * PI);
-                b = new Cell(null, null, null, null,
+                b = new Cell(
                                //m, I, Z, om0 , r, E,
                                  1, 1, 1, 1, 0.5, 1,
                                //x, y,vx,vy, L
@@ -75,12 +94,12 @@ public class TwoCellTests
                 bodyStatusReading = (body) -> ("" + body.totalEnergy());
                 cellStatusReading = (c) -> {
                     return String.format("%f %f %f ", c.y, c.theta, c.L);};
-                a = new Cell(null, null, null, null,
+                a = new Cell(
                                //m, I, Z, om0 , r   , E, index
                              10000, 10000, 0,  2*PI/10000, 0.5 , 1,
                                //x, y,vx,vy, L
                                  0, 0, 0, 0, 0.00);
-                b = new Cell(null, null, null, null,
+                b = new Cell(
                                //m, I, Z, om0 , r, E, index
                                  1, 1, 0, 2 * PI, 0.5, 1,
                                //x, y,vx,vy, L
@@ -94,12 +113,12 @@ public class TwoCellTests
                 Cell a, b;
                 SoftBody.cellStatusReading = (c) -> {
                     return String.format(" %f %f ", c.x, c.y);};
-                a = new Cell(null, null, null, null,
+                a = new Cell(
                                //m, I, Z, om0 , r   , E
                              10000, 1, 0,  2*PI, 0.5 , 0,
                                //x, y,th,vx,vy, L
                                  0, 0, 0, 0, 0);
-                b = new Cell(null, null, null, null,
+                b = new Cell(
                                //m, I, Z, om0 , r, E
                                  1, 1, 0, 2 * PI, 0.5, 0,
                                //x, y,th,vx,vy, L
@@ -111,10 +130,10 @@ public class TwoCellTests
                 testSimulation(cells, bonds, nSteps);
             } else if("relative motion".equals(args[0])) {
                 Cell a, b;
-                a = new Cell(null, null, null, null,
+                a = new Cell(
                                  1, 1, 0, 2*PI, 0.5, 1,
                                  -0.7, 0, 1, 0, 0);
-                b = new Cell(null, null, null, null,
+                b = new Cell(
                              1, 1, 0, 2*PI, 0.5, 1,
                              +0.7, 0, 1, 0, 0);
                 cells = new Cell[] {a, b};
@@ -126,12 +145,12 @@ public class TwoCellTests
                 Cell a, b;
                 cellStatusReading = (c) -> {
                     return String.format(" %f %f ", c.x, c.y);};
-                a = new Cell(null, null, null, null,
+                a = new Cell(
                                //m, I, Z, om0 , r  , E, index
                                  1, 1, 1, 2*PI, 1, 0,
                                //x, y,th,vx,vy, L
                                 -2, 0, 0, -2, 0);
-                b = new Cell(null, null, null, null,
+                b = new Cell(
                                //m, I, Z, om0 , r  , E, index
                                  1, 1, 1, 2*PI, 1, 0,
                                //x, y,th,vx,vy, L
@@ -143,10 +162,10 @@ public class TwoCellTests
                 testSimulation(cells, bonds, nSteps);
             } else if("relative motion damping".equals(args[0])) {
                 Cell a, b;
-                a = new Cell(null, null, null, null,
+                a = new Cell(
                                  1, 1, 0.1, 1, 1, 1,
                                  -2, 0, 1, 0, 0);
-                b = new Cell(null, null, null, null,
+                b = new Cell(
                              1, 1, 0.1, 1, 1, 1,
                              2, 0, 1, 0, 0);
                 cells = new Cell[] {a, b};
@@ -156,8 +175,8 @@ public class TwoCellTests
                 testSimulation(cells, bonds, nSteps);
             } else if("minimize".equals(args[0])) {
                 Cell a, b;
-                a = new Cell(null, null, null, null, 1, 1, 0, 1, 0.5 , 1, -0.5, 0, 0, -1, 0);
-                b = new Cell(null, null, null, null, 1, 1, 0, 1, 0.5, 0.1, 0.5, 0, 0.0, 1, 0);
+                a = new Cell(1, 1, 0, 1, 0.5 , 1, -0.5, 0, 0, -1, 0);
+                b = new Cell(1, 1, 0, 1, 0.5, 0.1, 0.5, 0, 0.0, 1, 0);
                 cells = new Cell[] {a, b};
                 bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
                 dt = 0.1;

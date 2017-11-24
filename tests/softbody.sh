@@ -2,9 +2,21 @@
 javac -g physics/*.java &&
 javac -g physics/*/*.java
 
+
+ask_exit() {
+    read -p "Continue testing? " -n 1 -r
+    echo    # (optional) move to a new line
+    if ! [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        exit 0
+    fi
+}
+
+
 if [ 0 -eq $? ]; then
-    java -ea physics.test.TwoCellTests "damped symmetric rotation oscillation" 0.1 1000  > tempfile.dat
+    java -ea physics.test.TwoCellTests "damped relative rotation" 0.1 100  > tempfile.dat
     gnuplot -e "set parametric;\
+    set title 'damped symmetric rotation oscillation';\
     set terminal qt 0;\
     plot 'tempfile.dat' u 7:(column(8)) w linespoints ls 1,\
          'tempfile.dat' u 2:(column(3)) w linespoints ls 2;\
@@ -12,10 +24,23 @@ if [ 0 -eq $? ]; then
     plot 'tempfile.dat' u 1:(column(4) - column(13)) w linespoints ls 3;\
     pause -1"
 
-    exit 0
+    ask_exit
+
+    java -ea physics.test.TwoCellTests "damped symmetric rotation oscillation" 0.1 1000  > tempfile.dat
+    gnuplot -e "set parametric;\
+    set title 'damped symmetric rotation oscillation';\
+    set terminal qt 0;\
+    plot 'tempfile.dat' u 7:(column(8)) w linespoints ls 1,\
+         'tempfile.dat' u 2:(column(3)) w linespoints ls 2;\
+    set terminal qt 1;\
+    plot 'tempfile.dat' u 1:(column(4) - column(13)) w linespoints ls 3;\
+    pause -1"
+
+    ask_exit
 
     java -ea physics.test.TwoCellTests "symmetric rotation oscillation" 0.01 840  > tempfile.dat
     gnuplot -e "set parametric;\
+    set title 'symmetric rotation oscillation';\
     set terminal qt 0;\
     plot 'tempfile.dat' u 7:(column(8)) w linespoints ls 1, \
          'tempfile.dat' u 2:(column(3)) w linespoints ls 2 ;\
@@ -26,17 +51,22 @@ if [ 0 -eq $? ]; then
     plot 'tempfile.dat' u 1:((column(13) - column(4))) w linespoints ls 0; \
     pause -1"
 
+    ask_exit
 
     java -ea physics.test.TwoCellTests "beam oscillation" 0.1 500  > tempfile.dat &&
     gnuplot -e "set parametric;\
+    set title 'beam oscillation';\
     set terminal qt 0;\
     plot for [n=5:7] 'tempfile.dat' u 1:(column(n)) w linespoints ls n  title 'y th l';\
     set terminal qt 1;\
     plot for [n=8:8] 'tempfile.dat' u 1:(column(n)) w linespoints ls n  title 'energy';\
     pause -1"
 
-    java -ea physics.test.TwoCellTests "beam oscillation rotation" 0.001 1000  > tempfile.dat &&
+    ask_exit
+
+    java -ea physics.test.TwoCellTests "beam oscillation rotation" 0.01 1000  > tempfile.dat &&
     gnuplot -e "set parametric;\
+    set title 'beam oscillation rotation';\
     set terminal qt 0;\
     plot 'tempfile.dat' u 7:(column(8)) w linespoints ls 0;\
     set terminal qt 1;\
@@ -47,32 +77,41 @@ if [ 0 -eq $? ]; then
     plot 'tempfile.dat' u 1:(column(12)) w linespoints ls 1;\
     pause -1"
 
+    ask_exit
+
     java -ea physics.test.TwoCellTests "orbit" 0.1 800 > tempfile.dat &&
     gnuplot -e "set parametric;\
+    set title 'orbit';\
     plot for [n=2:4:2] 'tempfile.dat' u n:(column(n+1)) ls n pt 1  ps 1;\
     set terminal qt 1;\
     plot for [n=6:6:1] 'tempfile.dat' u 1:(column(n)) ls n pt 1  ps 1;\
     pause -1"
 
-
-
+    ask_exit
 
     java -ea physics.test.TwoCellTests "basic rotation" 0.01 400 > tempfile.dat &&
     gnuplot -e "set parametric;\
+    set title 'basic rotation';\
     plot for [n=2:4:2] 'tempfile.dat' u n:(column(n+1)) ls n pt 1  ps 1;\
     set terminal qt 1;\
     plot for [n=6:6:1] 'tempfile.dat' u 1:(column(n)) ls n pt 1  ps 1;\
     pause -1"
 
+    ask_exit
+
     java -ea physics.test.TwoCellTests "relative motion damping" 0.01 1000 > tempfile.dat &&
     gnuplot -e "\
+    set title 'relative motion damping';\
     plot for [n=2:3] 'tempfile.dat' u 1:(column(n)) ls n pt 1  ps 1;\
     set terminal qt 1;\
     plot for [n=4:4:1] 'tempfile.dat' u 1:(column(n)) ls n pt 1  ps 1;\
     pause -1"
 
+    ask_exit
+
     java -ea physics.test.TwoCellTests "relative motion" 0.1 100 > tempfile.dat &&
     gnuplot -e "\
+    set title 'relative motion';\
     plot for [n=2:3] 'tempfile.dat' u 1:(column(n)) ls n pt 1  ps 1;\
     set terminal qt 1;\
     plot for [n=4:4:1] 'tempfile.dat' u 1:(column(n)) ls n pt 1  ps 1;\
