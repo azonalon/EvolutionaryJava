@@ -3,6 +3,17 @@ javac -g physics/*.java &&
 javac -g physics/*/*.java
 
 if [ 0 -eq $? ]; then
+    java -ea physics.test.TwoCellTests "damped symmetric rotation oscillation" 0.1 1000  > tempfile.dat
+    gnuplot -e "set parametric;\
+    set terminal qt 0;\
+    plot 'tempfile.dat' u 7:(column(8)) w linespoints ls 1,\
+         'tempfile.dat' u 2:(column(3)) w linespoints ls 2;\
+    set terminal qt 1;\
+    plot 'tempfile.dat' u 1:(column(4) - column(13)) w linespoints ls 3;\
+    pause -1"
+
+    exit 0
+
     java -ea physics.test.TwoCellTests "symmetric rotation oscillation" 0.01 840  > tempfile.dat
     gnuplot -e "set parametric;\
     set terminal qt 0;\
@@ -15,7 +26,6 @@ if [ 0 -eq $? ]; then
     plot 'tempfile.dat' u 1:((column(13) - column(4))) w linespoints ls 0; \
     pause -1"
 
-    exit 0
 
     java -ea physics.test.TwoCellTests "beam oscillation" 0.1 500  > tempfile.dat &&
     gnuplot -e "set parametric;\

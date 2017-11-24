@@ -26,7 +26,6 @@ public class SoftBody {
         return a*a;
     }
 
-
     public static double phi0;
     static int phiCounter = 0;
     static int LEFT = 1 << 0;
@@ -128,23 +127,26 @@ public class SoftBody {
         double vXRelative = first.vx - second.vx;
         double vYRelative = first.vy - second.vy;
         // subtract parts orthogonal to direction vector
-        double orthogonalFraction = vXRelative * -1 * dy + vYRelative * dx;
-        double dphicalc = -Math.asin(orthogonalFraction * dt/d);
-        double shearDamping = 0.00 * D * (first.L - dphicalc + second.L - dphicalc);
-        orthogonalFraction -= shearDamping;
-        vXRelative -=  orthogonalFraction * -1 * dy;
-        vYRelative -=  orthogonalFraction * dx;
+        double vOrthogonal = vXRelative * -1 * dy + vYRelative * dx;
+        double dphi = Math.asin(vOrthogonal * dt/d);
+        // double shearDamping = - D * (first.L - dphicalc + second.L - dphicalc);
+        // orthogonalFraction += shearDamping;
+        double odf1 = 1;// - 0.1 * Math.abs(first.L - dphi);
+        double odf2 = 1;// - 0.1 * Math.abs(second.L - dphi);
+        vXRelative -=  vOrthogonal * -1 * dy;
+        vYRelative -=  vOrthogonal * dx;
         // System.err.format("orth vel.: %f, orth Damping: %f, Torque: %f, phi %f\n",orthogonalFraction, shearDamping, second.T, phi);
         // System.err.format("fShear: %f, d: %f, dphi: %f, vxR: %f, vyR: %f\n", fShear, d, dphicalc, vXRelative, vYRelative);
         // System.err.format("dx: %f, dy: %f, phi: %f\n", dx, dy, phi);
-        System.err.format("th1: %f, th2: %f, phi: %f\n", first.theta, second.theta, phi);
+        System.err.format("L1: % 04.8f, L2: % 04.8f, dphi: %f\n", first.L, second.L, dphi);
+        System.err.format("th1: %f, th2: %f, phi: %f, odf1: %f, odf2: %f\n", first.theta, second.theta, phi, odf1, odf2);
 
-        first.fX -= c * vXRelative;
-        first.fY -= c * vYRelative;
-        second.fX += c * vXRelative;
-        second.fY += c * vYRelative;
-        first.T -= D * (first.L - second.L);
-        second.T -= D * (second.L - first.L);
+        first.fX  -= c * vXRelative * odf2;
+        first.fY  -= c * vYRelative * odf2;
+        second.fX += c * vXRelative * odf1;
+        second.fY += c * vYRelative * odf1;
+        first.T  -= D * (first.L - second.L);
+        second.T += D * (first.L - second.L);
     }
 
     public double totalEnergy() {

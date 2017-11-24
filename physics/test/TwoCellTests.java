@@ -12,7 +12,26 @@ public class TwoCellTests
     public static void main(String[] args) {
             Cell[] cells = null;
             Bond[] bonds = null;
-            if("symmetric rotation oscillation".equals(args[0])) {
+            if("damped symmetric rotation oscillation".equals(args[0])) {
+                Cell a, b;
+                SoftBody.bodyStatusReading = (body) -> ("" + body.totalEnergy() + " " + phi0);
+                cellStatusReading = (c) -> { return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
+                a = new Cell(null, null, null, null,
+                               //m, I, Z, om0 , r   , E,
+                               1, .1, 1, 1, 0.5 , .1,
+                               //x, y,vx,vy, L
+                               -0.5, 0, 0, -1, 0);
+                b = new Cell(null, null, null, null,
+                               //m, I, Z, om0 , r, E,
+                                 1, .1, 1, 1, 0.5, .1,
+                               //x, y,vx,vy, L
+                                 0.5, 0, 0.0, 1, 0);
+                cells = new Cell[] {a, b};
+                bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
+                dt = Double.parseDouble(args[1]);
+                int nSteps = Integer.parseInt(args[2]);
+                testSimulation(cells, bonds, nSteps);
+            } else if("symmetric rotation oscillation".equals(args[0])) {
                 Cell a, b;
                 SoftBody.bodyStatusReading = (body) -> ("" + body.totalEnergy() + " " + phi0);
                 cellStatusReading = (c) -> { return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
