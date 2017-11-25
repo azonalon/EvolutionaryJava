@@ -10,6 +10,7 @@ import java.awt.image.Raster;
 import java.io.*;
 import java.nio.*;
 import java.io.IOException;
+import java.net.URL;
 
 
 
@@ -17,7 +18,6 @@ public class Texture {
     byte[] image;
     int ID;
     // static int format = GL_RGBA8I;
-    Texture() { };
 
     void genTexture() {
             //Generally a good idea to enable texturing first
@@ -58,6 +58,11 @@ public class Texture {
 
     static public void main(String[] args) throws IOException { };
 
+    static public Texture fromResource(String resource) throws IOException {
+        URL url = Thread.currentThread().getContextClassLoader().getResource(resource);
+        File file = new File(url.getFile());
+        return fromFile(file);
+    }
     static public Texture fromFile(File f) throws IOException {
         Texture texture = new Texture();
         texture.genTexture();
@@ -85,6 +90,7 @@ public class Texture {
         glTexImage2D(GL_TEXTURE_2D,  0, GL_RGBA,
                      image.getWidth(), image.getHeight(),
                      0, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+        glBindTexture(GL_TEXTURE_2D, 0);
         return texture;
     }
 

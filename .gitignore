@@ -1,5 +1,9 @@
-*.class
 *.log
 lib/*
 literature
 tempfile.dat
+.gitignore
+.classcache
+build
+.gradle
+.classpath

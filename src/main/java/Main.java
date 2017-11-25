@@ -1,5 +1,6 @@
 import java.io.*;
 import java.nio.*;
+import util.*;
 import org.joml.Matrix4f;
 import org.lwjgl.*;
 import org.lwjgl.BufferUtils;
@@ -67,12 +68,11 @@ public class Main {
         Square s = new Square(pipeline);
         Triangle t = new Triangle(pipeline);
         try {
-            s.setTexture(Texture.fromFile(new File("./rsc/textures/triangleEye.png")));
-            t.setTexture(Texture.fromFile(new File("./rsc/textures/triangleEye.png")));
+            s.setTexture(Texture.fromResource("./textures/triangleEye.png"));
+            t.setTexture(Texture.fromResource("./textures/landscape.jpg"));
         } catch (IOException e) {
             System.out.println(e);
         }
-        // Triangle t = new Triangle(pipeline);
         t.relocate(2, 0, 0);
 
 		// Run the rendering loop until the user has attempted to close
@@ -94,6 +94,8 @@ public class Main {
 	}
 
 	public static void main(String[] args) {
+        // System.out.println(FileAssert.printDirectoryTree(new File(".")));
+        // assert(new File("./shaders/pipeline.fs").exists());
 		new Main().run();
 	}
 

@@ -23,6 +23,7 @@ public class Renderable {
     FloatBuffer vertices; // Edges of polygons
     FloatBuffer colors; // Edges of polygons
     IntBuffer indices; // indices for indexed drawing
+    Texture texture;
     Matrix4f modelMatrix;
     ShaderPipeline pipeline;
     int modelMatrixLocation;
@@ -66,8 +67,10 @@ public class Renderable {
     }
 
     public void setTexture(Texture t) {
-        glBindVertexArray(vaoId);
-        glBindTexture(GL_TEXTURE_2D, t.ID);
+        // glBindVertexArray(vaoId);
+        // glBindTexture(GL_TEXTURE_2D, t.ID);
+        // glBindVertexArray(0);
+        this.texture = t;
     }
 
     public void relocate(float x, float y, float z) {
@@ -79,6 +82,7 @@ public class Renderable {
 
     public void draw() {
         pipeline.setModelMatrix(modelMatrix);
+        glBindTexture(GL_TEXTURE_2D, texture.ID);
         glBindVertexArray(vaoId);
         glDrawElements(GL_TRIANGLES, indices.capacity(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
