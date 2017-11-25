@@ -21,8 +21,8 @@ public class ShaderPipeline  {
 
     void createShaders() throws IOException {
         int program = glCreateProgram();
-        int vshader = Shader.createShader("./shaders/pipeline.vs", GL_VERTEX_SHADER);
-        int fshader = Shader.createShader("./shaders/pipeline.fs", GL_FRAGMENT_SHADER);
+        int vshader = Shader.createShader("/shaders/pipeline.vs", GL_VERTEX_SHADER);
+        int fshader = Shader.createShader("/shaders/pipeline.fs", GL_FRAGMENT_SHADER);
         glAttachShader(program, vshader);
         glAttachShader(program, fshader);
         glLinkProgram(program);

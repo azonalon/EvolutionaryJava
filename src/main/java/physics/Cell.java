@@ -1,5 +1,4 @@
 package physics;
-import static physics.SoftBody.dt;
 
 enum CellCulture {
     STIFF(1, 1, 1, 1, 10, 10),
@@ -21,6 +20,7 @@ enum CellCulture {
 }
 
 public class Cell {
+    public static double dt = 0.1;
     public Cell(
          double m, double I, double zeta, double omega0, double r, double E,
          double x, double y, double vx, double vy,

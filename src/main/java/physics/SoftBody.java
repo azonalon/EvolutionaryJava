@@ -1,7 +1,7 @@
 package physics;
 import physics.*;
 import java.util.*;
-// import util.Math;
+import static util.Math.*;
 import java.util.function.*;
 import static java.lang.Math.PI;
 import static java.lang.Math.sqrt;
@@ -14,32 +14,15 @@ public class SoftBody {
         this.bonds = bonds;
     }
 
-
     Cell[] cells;
     Bond[] bonds;
     double energy = 0;
     public static double ka=0, kb=-0.0, kc=0, kd=0;
-    /*
-     * STATIC methods
-     */
-    public static double sqrd(double a) {
-        return a*a;
-    }
-
-    public static double phi0;
-    static int phiCounter = 0;
-    static int LEFT = 1 << 0;
-    static int RIGHT= 1 << 1;
-    static int UP   = 1 << 2;
-    static int DOWN = 1 << 3;
-    public static double dt = 0.1;
     static boolean startProgram = true;
-    public static Function<Cell, String> cellStatusReading =
-        (Cell c)->{return String.format("%f ", c.x);};
 
-    public static Function<SoftBody, String> bodyStatusReading =
-        (body)->{return body.totalEnergy() + "";};
-
+    public static Consumer<Cell> cellStatusCallback = (Cell c)->{};
+    public static Consumer<SoftBody> bodyStatusCallback = (SoftBody b)->{};
+    public static Consumer<Bond> bondStatusCallback = (Bond b)->{};
 
     /**
      * checks if the bond forces between the cells have been added to each cell.
@@ -48,17 +31,20 @@ public class SoftBody {
      * @param  Cell b             [description]
      * @return      [description]
      */
-
     public void propagateCells() {
         for(Cell c: cells) {
-            System.out.print(cellStatusReading.apply(c) + " ");
+            cellStatusCallback.accept(c);
             energy += c.L * c.L * c.I/2.0 + c.vx * c.vx * c.m /2.0 + c.vy * c.vy * c.m /2.0;
             c.propagate();
         }
-        System.out.print(bodyStatusReading.apply(this));
-        System.out.println();
+        bodyStatusCallback.accept(this);
     }
 
+    /**
+     * Initializes forces to zero before each step.
+     * Goes through all the bonds and adds interaction forces to both cells
+     * in the bond
+     */
     public void updateForces() {
         energy=0;
         for(Cell c: cells) {
@@ -68,9 +54,14 @@ public class SoftBody {
         }
         for(Bond bond: bonds) {
             addBondForces(bond);
+            bondStatusCallback.accept(bond);
         }
     }
 
+    /**
+     * Calculates and add forces for the two cells in  a bond.
+     * @param Bond b
+     */
     void addBondForces(Bond b) {
         Cell first = b.a;
         Cell second = b.b;
@@ -92,7 +83,6 @@ public class SoftBody {
         }
         b.phi0 = phi;
         phi += - b.unstressedAngle + b.rotationCounter * 2 * PI;
-        phi0 = phi;
         double fShear = - 6 * l * l * E * (first.theta + second.theta - 2 * phi);
         assert(d>0.01);
 
@@ -107,20 +97,22 @@ public class SoftBody {
 
 
         energy += (d-l)*(d-l)* k/2.0;
-        energy -= 2 * l * l * l * E * (
+        energy += 2 * l * l * l * E * (
         sqrd(first.theta + second.theta - 2 * phi) -
-        (first.theta - phi) * (second.theta - phi)
+        (first.theta - phi) * (second.theta - phi) * 1
         );
+        kb = 2;
+        kc = 0.0;
+        // energy += ka * sqrd(first.theta + - phi) + kb;
+        // energy += kb * E * l * l * l * (sqrd(2 * second.theta + first.theta - 3 * phi) -
+        //                 1*(2*second.theta - 2*phi) * (first.theta - phi));
+        // energy += kc * E * l * l * l * sqrd(2 * first.theta + second.theta - 3 * phi);
 
-        energy += ka * sqrd(first.theta + - phi) + kb;
-        // energy += kb * E * l * l * l * sqrd(2 * second.theta + first.theta - 3 * phi);
-        // energy += kc * E * l * l * l * sqrd(2 * second.theta + first.theta - 3 * phi);
-
-        if(startProgram == true) {
-            System.err.format("Parameters: k=%f, E=%f, D=%f, c=%f, l=%f, m1=%f, m2=%f\n",
-                                k, E, D, c, l, first.m, second.m);
-            startProgram = false;
-        }
+        // if(startProgram == true) {
+            // System.err.format("Parameters: k=%f, E=%f, D=%f, c=%f, l=%f, m1=%f, m2=%f\n",
+            //                     k, E, D, c, l, first.m, second.m);
+            // startProgram = false;
+        // }
 
 
         // damping forces
@@ -128,7 +120,7 @@ public class SoftBody {
         double vYRelative = first.vy - second.vy;
         // subtract parts orthogonal to direction vector
         double vOrthogonal = vXRelative * -1 * dy + vYRelative * dx;
-        double dphi = Math.asin(vOrthogonal * dt/d);
+        // double dphi = Math.asin(vOrthogonal * dt/d);
         // double shearDamping = - D * (first.L - dphicalc + second.L - dphicalc);
         // orthogonalFraction += shearDamping;
         double odf1 = 1;// - 0.1 * Math.abs(first.L - dphi);
@@ -138,8 +130,8 @@ public class SoftBody {
         // System.err.format("orth vel.: %f, orth Damping: %f, Torque: %f, phi %f\n",orthogonalFraction, shearDamping, second.T, phi);
         // System.err.format("fShear: %f, d: %f, dphi: %f, vxR: %f, vyR: %f\n", fShear, d, dphicalc, vXRelative, vYRelative);
         // System.err.format("dx: %f, dy: %f, phi: %f\n", dx, dy, phi);
-        System.err.format("L1: % 04.8f, L2: % 04.8f, dphi: %f\n", first.L, second.L, dphi);
-        System.err.format("th1: %f, th2: %f, phi: %f, odf1: %f, odf2: %f\n", first.theta, second.theta, phi, odf1, odf2);
+        // System.err.format("L1: % 04.8f, L2: % 04.8f\n", first.L, second.L);
+        // System.err.format("th1: %f, th2: %f, phi: %f, odf1: %f, odf2: %f\n", first.theta, second.theta, phi, odf1, odf2);
 
         first.fX  -= c * vXRelative * odf2;
         first.fY  -= c * vYRelative * odf2;

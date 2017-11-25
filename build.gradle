@@ -8,6 +8,13 @@ repositories {
     mavenCentral()
 }
 
+test {
+    testLogging{
+        showStandardStreams = true
+        testLogging.exceptionFormat = 'full'
+    }
+}
+
 
 dependencies {
     compile "org.lwjgl:lwjgl:${lwjglVersion}"
@@ -17,6 +24,7 @@ dependencies {
     compile "org.lwjgl:lwjgl:${lwjglVersion}:${natives}"
     compile "org.lwjgl:lwjgl-glfw:${lwjglVersion}:${natives}"
     compile "org.lwjgl:lwjgl-opengl:${lwjglVersion}:${natives}"
+    testCompile "junit:junit:4.12"
 }
 
 
@@ -24,10 +32,20 @@ task runApp(type: JavaExec) {
     dependsOn classes
     jvmArgs "-Dorg.lwjgl.util.DebugLoader=true", "-ea"
     classpath sourceSets.main.runtimeClasspath
-    main = 'Main'
+    main = 'main.Main'
     /*println(commandLine)*/
     File f = file(".classpath")
-    classpath.each{ File file->
-        f.write(configurations.compile.asPath)
+    f.write((sourceSets.main.runtimeClasspath
+             + configurations.testCompile).asPath)
+}
+
+jar {
+    from {
+        (configurations.runtime).collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    manifest {
+        attributes("Main-Class": "main.Main" )
     }
 }

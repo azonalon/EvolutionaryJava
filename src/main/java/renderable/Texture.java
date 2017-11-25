@@ -11,6 +11,7 @@ import java.io.*;
 import java.nio.*;
 import java.io.IOException;
 import java.net.URL;
+import main.Main;
 
 
 
@@ -59,16 +60,16 @@ public class Texture {
     static public void main(String[] args) throws IOException { };
 
     static public Texture fromResource(String resource) throws IOException {
-        URL url = Thread.currentThread().getContextClassLoader().getResource(resource);
-        File file = new File(url.getFile());
-        return fromFile(file);
+        return fromBuffer(ImageIO.read(
+            Main.class.getResourceAsStream(resource)
+        ));
     }
-    static public Texture fromFile(File f) throws IOException {
+    static public Texture fromBuffer(BufferedImage image) throws IOException {
         Texture texture = new Texture();
         texture.genTexture();
         setTextureParameters();
 
-        BufferedImage image = ImageIO.read(f);
+        // BufferedImage image = ImageIO.read(f);
         int w = image.getWidth(), h = image.getHeight();
         int BYTES_PER_PIXEL=4;
         ByteBuffer buffer = BufferUtils.createByteBuffer(w * h * BYTES_PER_PIXEL);

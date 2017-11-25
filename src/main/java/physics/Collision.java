@@ -1,4 +1,4 @@
-package physics.test;
+package physics;
 import java.util.*;
 import physics.*;
 

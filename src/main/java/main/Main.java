@@ -1,3 +1,4 @@
+package main;
 import java.io.*;
 import java.nio.*;
 import util.*;
@@ -68,8 +69,8 @@ public class Main {
         Square s = new Square(pipeline);
         Triangle t = new Triangle(pipeline);
         try {
-            s.setTexture(Texture.fromResource("./textures/triangleEye.png"));
-            t.setTexture(Texture.fromResource("./textures/landscape.jpg"));
+            s.setTexture(Texture.fromResource("/textures/triangleEye.png"));
+            t.setTexture(Texture.fromResource("/textures/landscape.jpg"));
         } catch (IOException e) {
             System.out.println(e);
         }

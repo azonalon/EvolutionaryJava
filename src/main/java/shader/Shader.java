@@ -23,6 +23,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.PointerBuffer;
+import main.Main;
 // import org.joml.Vector3f;
 
 /**
@@ -66,36 +67,26 @@ public class Shader {
 	 */
     public static ByteBuffer ioResourceToByteBuffer(String resource, int bufferSize) throws IOException {
         ByteBuffer buffer;
-        URL url = Thread.currentThread().getContextClassLoader().getResource(resource);
-        File file = new File(url.getFile());
-        if (file.isFile()) {
-            FileInputStream fis = new FileInputStream(file);
-            FileChannel fc = fis.getChannel();
-            buffer = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
-            fc.close();
-            fis.close();
-        } else {
-            buffer = BufferUtils.createByteBuffer(bufferSize);
-            InputStream source = url.openStream();
-            if (source == null)
-                throw new FileNotFoundException(resource);
+        InputStream source = Main.class.getResourceAsStream(resource);
+        buffer = BufferUtils.createByteBuffer(bufferSize);
+        if (source == null)
+            throw new FileNotFoundException(resource);
+        try {
+            ReadableByteChannel rbc = Channels.newChannel(source);
             try {
-                ReadableByteChannel rbc = Channels.newChannel(source);
-                try {
-                    while (true) {
-                        int bytes = rbc.read(buffer);
-                        if (bytes == -1)
-                            break;
-                        if (buffer.remaining() == 0)
-                            buffer = resizeBuffer(buffer, buffer.capacity() * 2);
-                    }
-                    buffer.flip();
-                } finally {
-                    rbc.close();
+                while (true) {
+                    int bytes = rbc.read(buffer);
+                    if (bytes == -1)
+                        break;
+                    if (buffer.remaining() == 0)
+                        buffer = resizeBuffer(buffer, buffer.capacity() * 2);
                 }
+                buffer.flip();
             } finally {
-                source.close();
+                rbc.close();
             }
+        } finally {
+            source.close();
         }
         return buffer;
     }
@@ -116,7 +107,6 @@ public class Shader {
 	 */
 	public static int createShader(String resource, int type, String version) throws IOException {
 		int shader = glCreateShader(type);
-
 		ByteBuffer source = ioResourceToByteBuffer(resource, 8192);
 
 		if ( version == null ) {

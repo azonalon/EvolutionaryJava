@@ -1,7 +1,7 @@
-package physics.test;
+package physics;
 
 public class Leapfrog {
-    abstract static class DampedLeapfrog {
+    abstract public static class DampedLeapfrog {
         double x1, x2, v1, v2, dt, t;
         /* position, velocity, mass, time step, damping constant */
 
