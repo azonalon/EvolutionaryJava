@@ -62,12 +62,12 @@ public class TwoCellTests
         };
         a = new Cell(
                        //m, I, Z, om0 , r   , E,
-                       1, 1, 0, 1, 0.5 , 1,
+                       1, 1, 1, 1, 0.5 , 1,
                        //x, y,vx,vy, L
                        -0.5, 0, 0, 0, 1);
         b = new Cell(
                        //m, I, Z, om0 , r, E,
-                         1, 1, 0, 1, 0.5, 1,
+                         1, 1, 1, 1, 0.5, 1,
                        //x, y,vx,vy, L
                          0.5, 0, 0.0, 0, +1);
         cells = new Cell[] {a, b};
