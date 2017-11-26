@@ -83,29 +83,31 @@ public class SoftBody {
         }
         b.phi0 = phi;
         phi += - b.unstressedAngle + b.rotationCounter * 2 * PI;
-        double fShear = - 6 * l * l * E * (first.theta + second.theta - 2 * phi);
+        double fShear = + 6 * l * l * E * (first.theta + second.theta - 2 * phi);
         assert(d>0.01);
 
 
-        first.fX  += (d - l) * k * dx + fShear * (-1*dy);
-        first.fY  += (d - l) * k * dy + fShear * (   dx);
-        second.fX -= (d - l) * k * dx + fShear * (-1*dy);
-        second.fY -= (d - l) * k * dy + fShear * (   dx);
+        first.fX  += (d - l) * k * dx - fShear * (-1*dy);
+        first.fY  += (d - l) * k * dy - fShear * (   dx);
+        second.fX += -(d - l) * k * dx + fShear * (-1*dy);
+        second.fY += -(d - l) * k * dy + fShear * (   dx);
 
-        first.T  -= 2 * E * l * l * l * (2 * first.theta + second.theta - 3 * phi);
-        second.T -= 2 * E * l * l * l * (2 * second.theta + first.theta - 3 * phi);
+        // first.T  -= 2 * E * l * l * l * (2 * first.theta + second.theta - 3 * phi);
+        // second.T -= 2 * E * l * l * l * (2 * second.theta + first.theta - 3 * phi);
+        first.T  += 6 * E * l * l * l * (-second.theta - first.theta  + 2*phi - 3*(first.theta - second.theta));
+        second.T += 6 * E * l * l * l * (+first.theta  + second.theta - 2*phi - 3*(second.theta - first.theta));
 
 
         energy += (d-l)*(d-l)* k/2.0;
-        energy += 2 * l * l * l * E * (
+        energy -= 2 * l * l * l * E * (
         sqrd(first.theta + second.theta - 2 * phi) -
         (first.theta - phi) * (second.theta - phi) * 1
         );
-        kb = 2;
+        kb = 0;
         kc = 0.0;
         // energy += ka * sqrd(first.theta + - phi) + kb;
         // energy += kb * E * l * l * l * (sqrd(2 * second.theta + first.theta - 3 * phi) -
-        //                 1*(2*second.theta - 2*phi) * (first.theta - phi));
+        //                 2*(2*second.theta - 2*phi) * (first.theta - phi));
         // energy += kc * E * l * l * l * sqrd(2 * first.theta + second.theta - 3 * phi);
 
         // if(startProgram == true) {

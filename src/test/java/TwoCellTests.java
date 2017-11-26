@@ -36,9 +36,9 @@ public class TwoCellTests
     public void dampedRelativeRotation() throws IOException {
         Cell[] cells = null;
         Bond[] bonds = null;
-        int nSteps = 400;
+        int nSteps = 1400;
         int nCells = 2;
-        dt = 0.01;
+        dt = 0.1;
         int nCellParams = 9;
         double[][] simulationResults = new double[nSteps][nCells * nCellParams + 2];
         Cell a, b;
@@ -64,12 +64,12 @@ public class TwoCellTests
                        //m, I, Z, om0 , r   , E,
                        1, 1, 0, 1, 0.5 , 1,
                        //x, y,vx,vy, L
-                       -0.5, 0, 0, -1, 0);
+                       -0.5, 0, 0, 0, 1);
         b = new Cell(
                        //m, I, Z, om0 , r, E,
-                         1, 1, 0, 1, 0.5, .1,
+                         1, 1, 0, 1, 0.5, 1,
                        //x, y,vx,vy, L
-                         0.5, 0, 0.0, 1, 0);
+                         0.5, 0, 0.0, 0, +1);
         cells = new Cell[] {a, b};
         bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
         testSimulation(cells, bonds, nSteps);
