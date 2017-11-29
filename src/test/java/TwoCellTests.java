@@ -1,13 +1,14 @@
 import physics.*;
-import java.util.*;
 import org.junit.Test;
+import org.junit.Rule;
 import java.io.*;
+import org.junit.rules.*;
 import static util.PrettyPrint.printGrid;
 import java.nio.file.*;
 import static org.junit.Assert.*;
-import static physics.SoftBody.*;
+// import static physics.SoftBody.*;
 import static java.lang.Math.PI;
-import static physics.Cell.dt;
+// import static physics.Cell.dt;
 import static util.Math.*;
 
 public class TwoCellTests
@@ -16,6 +17,9 @@ public class TwoCellTests
     static int stepCounter=0;
     static double t;
     int i=0, j=0;
+
+    @Rule
+    public TestName name = new TestName();
 
     static String makeHeader(int nCells) {
         String[] observableNames = {
@@ -32,16 +36,86 @@ public class TwoCellTests
         return header;
     }
 
+    public void twoCellTestCase(
+        double m1, double I1, double zeta1, double k1, double r1, double E1,
+        double x1, double y1, double vx1, double vy1, double L1,
+        double m2, double I2, double zeta2, double k2, double r2, double E2,
+        double x2, double y2, double vx2, double vy2, double L2,
+        double dt, int nSteps
+    ) {
+        Cell a, b;
+        a = new Cell(
+            m1, I1, zeta1, k1, r1, E1,
+            x1, y1, vx1, vy1, L1);
+        b = new Cell(
+            m2, I2, zeta2, k2, r2, E2,
+            x2, y2, vx2, vy2, L2
+        );
+        runTwoCellTestCase(a, b, dt, nSteps);
+    }
+
     @Test
-    public void dampedRelativeRotation() throws IOException {
+    public void dampedRelativeRotation (){
+        double
+        m1= 1.0, I1= 1.0, zeta1= 0.1, k1=  1.0, r1= 0.5, E1= 1.0,
+        x1=-0.5, y1= 0.0, vx1=   0.0, vy1= 0.0, L1=-1.0,
+        m2= 1.0, I2= 1.0, zeta2= 0.1, k2=  1.0, r2= 0.5, E2= 1.0,
+        x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 0.0, L2=+1.0,
+        dt= 0.1;
+        int nSteps = 100;
+
+        twoCellTestCase(
+            m1, I1, zeta1, k1, r1, E1,
+            x1, y1, vx1, vy1, L1,
+            m2, I2, zeta2, k2, r2, E2,
+            x2, y2, vx2, vy2, L2,
+            dt, nSteps
+        );
+    }
+    @Test
+    public void testotesto (){
+        double
+        m1= 1.0, I1= 0.1, zeta1= 1.0, k1=  1.0, r1= 0.5, E1= 0.1,
+        x1=-0.5, y1= 0.0, vx1=   0.0, vy1=-1.0, L1=+0.0,
+        m2= 1.0, I2= 0.1, zeta2= 1.0, k2=  1.0, r2= 0.5, E2= 0.1,
+        x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 1.0, L2=+0.0,
+        dt= 0.1;
+        int nSteps = 100;
+
+        twoCellTestCase(
+            m1, I1, zeta1, k1, r1, E1,
+            x1, y1, vx1, vy1, L1,
+            m2, I2, zeta2, k2, r2, E2,
+            x2, y2, vx2, vy2, L2,
+            dt, nSteps
+        );
+    }
+
+    @Test
+    public void dampedAbsoluteRotation (){
+        double
+        m1= 1.0, I1= 1.0, zeta1= 1.0, k1=  1.0, r1= 0.5, E1= 1.0,
+        x1=-0.5, y1= 0.0, vx1=   0.0, vy1= 0.0, L1=+1.0,
+        m2= 1.0, I2= 1.0, zeta2= 1.0, k2=  1.0, r2= 0.5, E2= 1.0,
+        x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 0.0, L2=+1.0,
+        dt= 0.1;
+        int nSteps = 100;
+
+        twoCellTestCase(
+            m1, I1, zeta1, k1, r1, E1,
+            x1, y1, vx1, vy1, L1,
+            m2, I2, zeta2, k2, r2, E2,
+            x2, y2, vx2, vy2, L2,
+            dt, nSteps
+        );
+    }
+
+    public void runTwoCellTestCase(Cell a, Cell b, double dt, int nSteps) {
         Cell[] cells = null;
         Bond[] bonds = null;
-        int nSteps = 1400;
         int nCells = 2;
-        dt = 0.1;
         int nCellParams = 9;
         double[][] simulationResults = new double[nSteps][nCells * nCellParams + 2];
-        Cell a, b;
         SoftBody.cellStatusCallback = (c) -> {
              simulationResults[i][0+9*(j%nCells)] = c.x;
              simulationResults[i][1+9*(j%nCells)] = c.y;
@@ -60,219 +134,106 @@ public class TwoCellTests
             i++;
             t += dt;
         };
-        a = new Cell(
-                       //m, I, Z, om0 , r   , E,
-                       1, 1, 1, 1, 0.5 , 1,
-                       //x, y,vx,vy, L
-                       -0.5, 0, 0, 0, 1);
-        b = new Cell(
-                       //m, I, Z, om0 , r, E,
-                         1, 1, 1, 1, 0.5, 1,
-                       //x, y,vx,vy, L
-                         0.5, 0, 0.0, 0, +1);
         cells = new Cell[] {a, b};
-        bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
+        bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0, 0.0)};
+        physics.Cell.dt = dt;
         testSimulation(cells, bonds, nSteps);
         double[] energies = getColumn(simulationResults, 19);
         String header = makeHeader(nCells);
-        Files.write(Paths.get("plot.dat"),
-            (header + printGrid(simulationResults)).getBytes()
-        );
+        try {
+            Files.write(Paths.get("build/test-results/" + name.getMethodName() + ".dat"),
+                (header + printGrid(simulationResults)).getBytes()
+            );
+        } catch(IOException e) {
+            throw new RuntimeException("Could not write data");
+        }
         double e0 = energies[0];
         double eav = average(energies);
         assertTrue(String.format("Energy is not conserved! E0= %f, Eaverage=%f", e0, eav)
         , eav <= e0);
     }
 
-    // public static void main(String[] args) {
-    //         Cell[] cells = null;
-    //         Bond[] bonds = null;
-    //         if("damped relative rotation".equals(args[0])) {
-    //             Cell a, b;
-    //             SoftBody.bodyStatusReading = (body) -> ("" + body.totalEnergy() + " " + phi0);
-    //             cellStatusReading = (c) -> { return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
-    //             a = new Cell(
-    //                            //m, I, Z, om0 , r   , E,
-    //                            1, 1, 1, 1, 0.5 , .1,
-    //                            //x, y,vx,vy, L
-    //                            -0.5, 0, 0, 0, 1);
-    //             b = new Cell(
-    //                            //m, I, Z, om0 , r, E,
-    //                              1, 1, 1, 1, 0.5, .1,
-    //                            //x, y,vx,vy, L
-    //                              0.5, 0, 0.0, 0, -0.5);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = Double.parseDouble(args[1]);
-    //             int nSteps = Integer.parseInt(args[2]);
-    //             testSimulation(cells, bonds, nSteps);
-    //         } else if("damped symmetric rotation oscillation".equals(args[0])) {
-    //             Cell a, b;
-    //             SoftBody.bodyStatusReading = (body) -> ("" + body.totalEnergy() + " " + phi0);
-    //             cellStatusReading = (c) -> { return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
-    //             a = new Cell(
-    //                            //m, I, Z, om0 , r   , E,
-    //                            1, 1, 1, 1, 0.5 , .1,
-    //                            //x, y,vx,vy, L
-    //                            -0.5, 0, 0, -1, 0);
-    //             b = new Cell(
-    //                            //m, I, Z, om0 , r, E,
-    //                              1, 1, 1, 1, 0.5, .1,
-    //                            //x, y,vx,vy, L
-    //                              0.5, 0, 0.0, 1, 0);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = Double.parseDouble(args[1]);
-    //             int nSteps = Integer.parseInt(args[2]);
-    //             testSimulation(cells, bonds, nSteps);
-    //         } else if("symmetric rotation oscillation".equals(args[0])) {
-    //             Cell a, b;
-    //             SoftBody.bodyStatusReading = (body) -> ("" + body.totalEnergy() + " " + phi0);
-    //             cellStatusReading = (c) -> { return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
-    //             a = new Cell(
-    //                            //m, I, Z, om0 , r   , E,
-    //                            1, 1, 0, 1, 0.5 , 1,
-    //                            //x, y,vx,vy, L
-    //                            -0.5, 0, 0, -1, -0.0 * 2 * PI);
-    //             b = new Cell(
-    //                            //m, I, Z, om0 , r, E,
-    //                              1, 1, 0, 1, 0.5, 0.1,
-    //                            //x, y,vx,vy, L
-    //                              0.5, 0, 0.0, 1, 0.0 * 2*PI);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = Double.parseDouble(args[1]);
-    //             int nSteps = Integer.parseInt(args[2]);
-    //             testSimulation(cells, bonds, nSteps);
-    //         } else if("beam oscillation rotation".equals(args[0])) {
-    //             Cell a, b;
-    //             bodyStatusReading = (body) -> ("" + body.totalEnergy());
-    //             cellStatusReading = (c) -> {
-    //                 return String.format("%f %f %f %f %f", c.x, c.y, c.theta, c.fX, c.fY);};
-    //             a = new Cell(
-    //                            //m, I, Z, om0 , r   , E, index
-    //                            10000, 10000, 1, 1, 0.5 , 1,
-    //                            //x, y,vx,vy, L
-    //                            0, 0, 0, 0, -0.0 * 2 * PI);
-    //             b = new Cell(
-    //                            //m, I, Z, om0 , r, E,
-    //                              1, 1, 1, 1, 0.5, 1,
-    //                            //x, y,vx,vy, L
-    //                              0, -1, 0.3, 0.0, 0.0 * 2*PI);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = Double.parseDouble(args[1]);
-    //             int nSteps = Integer.parseInt(args[2]);
-    //             testSimulation(cells, bonds, nSteps);
-    //         } else if("beam oscillation".equals(args[0])) {
-    //             Cell a, b;
-    //             bodyStatusReading = (body) -> ("" + body.totalEnergy());
-    //             cellStatusReading = (c) -> {
-    //                 return String.format("%f %f %f ", c.y, c.theta, c.L);};
-    //             a = new Cell(
-    //                            //m, I, Z, om0 , r   , E, index
-    //                          10000, 10000, 0,  2*PI/10000, 0.5 , 1,
-    //                            //x, y,vx,vy, L
-    //                              0, 0, 0, 0, 0.00);
-    //             b = new Cell(
-    //                            //m, I, Z, om0 , r, E, index
-    //                              1, 1, 0, 2 * PI, 0.5, 1,
-    //                            //x, y,vx,vy, L
-    //                              1.0, 0, 0, 0.02, 0);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = Double.parseDouble(args[1]);
-    //             int nSteps = Integer.parseInt(args[2]);
-    //             testSimulation(cells, bonds, nSteps);
-    //         } else if("orbit".equals(args[0])) {
-    //             Cell a, b;
-    //             SoftBody.cellStatusReading = (c) -> {
-    //                 return String.format(" %f %f ", c.x, c.y);};
-    //             a = new Cell(
-    //                            //m, I, Z, om0 , r   , E
-    //                          10000, 1, 0,  2*PI, 0.5 , 0,
-    //                            //x, y,th,vx,vy, L
-    //                              0, 0, 0, 0, 0);
-    //             b = new Cell(
-    //                            //m, I, Z, om0 , r, E
-    //                              1, 1, 0, 2 * PI, 0.5, 0,
-    //                            //x, y,th,vx,vy, L
-    //                              1.0, 0, 0, .1, 0);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = Double.parseDouble(args[1]);
-    //             int nSteps = Integer.parseInt(args[2]);
-    //             testSimulation(cells, bonds, nSteps);
-    //         } else if("relative motion".equals(args[0])) {
-    //             Cell a, b;
-    //             a = new Cell(
-    //                              1, 1, 0, 2*PI, 0.5, 1,
-    //                              -0.7, 0, 1, 0, 0);
-    //             b = new Cell(
-    //                          1, 1, 0, 2*PI, 0.5, 1,
-    //                          +0.7, 0, 1, 0, 0);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = Double.parseDouble(args[1]);
-    //             int nSteps = Integer.parseInt(args[2]);
-    //             testSimulation(cells, bonds, nSteps);
-    //         } else if("basic rotation".equals(args[0])) {
-    //             Cell a, b;
-    //             cellStatusReading = (c) -> {
-    //                 return String.format(" %f %f ", c.x, c.y);};
-    //             a = new Cell(
-    //                            //m, I, Z, om0 , r  , E, index
-    //                              1, 1, 1, 2*PI, 1, 0,
-    //                            //x, y,th,vx,vy, L
-    //                             -2, 0, 0, -2, 0);
-    //             b = new Cell(
-    //                            //m, I, Z, om0 , r  , E, index
-    //                              1, 1, 1, 2*PI, 1, 0,
-    //                            //x, y,th,vx,vy, L
-    //                              2, 0, 0, 2, 0);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = Double.parseDouble(args[1]);
-    //             int nSteps = Integer.parseInt(args[2]);
-    //             testSimulation(cells, bonds, nSteps);
-    //         } else if("relative motion damping".equals(args[0])) {
-    //             Cell a, b;
-    //             a = new Cell(
-    //                              1, 1, 0.1, 1, 1, 1,
-    //                              -2, 0, 1, 0, 0);
-    //             b = new Cell(
-    //                          1, 1, 0.1, 1, 1, 1,
-    //                          2, 0, 1, 0, 0);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = Double.parseDouble(args[1]);
-    //             int nSteps = Integer.parseInt(args[2]);
-    //             testSimulation(cells, bonds, nSteps);
-    //         } else if("minimize".equals(args[0])) {
-    //             Cell a, b;
-    //             a = new Cell(1, 1, 0, 1, 0.5 , 1, -0.5, 0, 0, -1, 0);
-    //             b = new Cell(1, 1, 0, 1, 0.5, 0.1, 0.5, 0, 0.0, 1, 0);
-    //             cells = new Cell[] {a, b};
-    //             bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
-    //             dt = 0.1;
-    //             int nSteps = 900;
-    //             double[] energies = new double[nSteps];
-    //             ka = Double.parseDouble(args[1]);
-    //             kb = Double.parseDouble(args[2]);
-    //             kc = Double.parseDouble(args[3]);
-    //             kd = Double.parseDouble(args[4]);
-    //             stepCounter = -1;
-    //             bodyStatusReading = (body) -> {
-    //                 stepCounter++;
-    //                 energies[stepCounter] = body.totalEnergy();
-    //                 return "" + energies[stepCounter];
-    //             };
-    //             cellStatusReading = (c) -> { return "";};
-    //             testSimulation(cells, bonds, nSteps);
-    //             System.err.println("Run finished with " + Arrays.toString(energies));
-    //             System.out.println(util.Math.standardDeviation(energies));
-    //         }
-    //     }
+    @Test
+    public void dampedRelativeRotation2() {
+        twoCellTestCase(
+        1, 1, 1, 1, 0.5 , .1,
+        -0.5, 0, 0, 0, 1,
+        1, 1, 1, 1, 0.5, .1,
+        0.5, 0, 0.0, 0, -1.0,
+        0.1, 200
+        );
+    }
+    @Test
+    public void dampedSymmetricRotationOscillation() {
+                                   twoCellTestCase(
+                                   1, 1, 1, 1, 0.5 , .1,
+                                   -0.5, 0, 0, -1, 0,
+                                     1, 1, 1, 1, 0.5, .1,
+                                     0.5, 0, 0.0, 1, 0,
+                                     0.1, 100
+                                   );
+    }
+
+    @Test
+    public void symmetricRotationOscillation() {
+                                   twoCellTestCase(
+                                   1, 1, 0, 1, 0.5 , 1,
+                                   -0.5, 0, 0, -1, 0.0,
+                                     1, 1, 0, 1, 0.5, 1,
+                                     0.5, 0, 0.0, 1, 0.0,
+                                     0.1, 100
+                                   );
+    }
+    @Test
+    public void beamOscillationRotation() {
+                                  twoCellTestCase (
+                                   10000, 10000, 1, 1, 0.5 , 1,
+                                   0, 0, 0, 0, -0.0 * 2 * PI,
+                                     1, 1, 1, 1, 0.5, 1,
+                                     0, -1, 0.3, 0.0, 0.0 * 2*PI,
+                                     0.1, 100
+                                   );
+    }
+    @Test
+    public void beamOscillation() {
+        twoCellTestCase(
+        1000, 1000, 1, 1, 0.5 , .1,
+        0, 0, 0, 0, 0,
+        1, 1, 1, 1, 0.5, .1,
+        1, 0, 0.0, 1, 0,
+        0.1, 100
+        );
+    }
+    @Test
+    public void orbit() {
+                                 twoCellTestCase(
+                                 10000, 1, 0,  2*PI, 0.5 , 0,
+                                     0, 0, 0, 0, 0,
+                                     1, 1, 0, 2 * PI, 0.5, 0,
+                                     1.0, 0, 0, 1, 0,
+                                     0.1, 100
+                                 );
+    }
+    @Test
+    public void relativeMotion() {
+                                     twoCellTestCase(
+                                         1, 1, 0, 2*PI, 0.5, 1,
+                                         -0.7, 0, 1, 0, 0,
+                                     1, 1, 0, 2*PI, 0.5, 1,
+                                     +0.7, 0, 1, 0, 0,
+                                     0.1, 100
+                                     );
+    }
+    @Test
+    public void basicRotation() {
+        twoCellTestCase(
+        1, 1, 1, 2*PI, 1, 0,
+        -2, 0, 0, -2, 0,
+        1, 1, 1, 2*PI, 1, 0,
+        2, 0, 0, 2, 0,
+        0.1, 100
+        );
+    }
 
     static void testSimulation(Cell[] cells, Bond[] bonds, int nSteps) {
         SoftBody bod = new SoftBody(cells, bonds);

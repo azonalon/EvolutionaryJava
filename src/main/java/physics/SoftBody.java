@@ -4,7 +4,7 @@ import java.util.*;
 import static util.Math.*;
 import java.util.function.*;
 import static java.lang.Math.PI;
-import static java.lang.Math.sqrt;
+// import static java.lang.Math.sqrt;
 // import static System.out.format;
 
 public class SoftBody {
@@ -12,6 +12,31 @@ public class SoftBody {
     public SoftBody(Cell[] cells, Bond[] bonds) {
         this.cells = cells;
         this.bonds = bonds;
+    }
+    /**
+     * Creates a SoftBody from an array of predefined cell
+     * types. Goes through the whole array and makes bonds
+     * where non null cells are adjacent. You have to make
+     * the cells in the array connected, otherwise isolated
+     * indices will be loose.
+     * @param  CellCulture[][] types  grid of celltype objects
+     * @return SoftBody according to celltype grid
+     */
+    public SoftBody(CellCulture[][] types) {
+        Vector<Bond> bonds = new Vector<Bond>();
+        CellCulture a=null, b=null,c=null;
+        for(int row = 0; row<types.length-1; row++)
+            for(int col = 0; col<types[row].length; col++) {
+                a = types[row  ][col  ];
+                b = types[row  ][col+1];
+                c = types[row+1][col  ];
+                if(a != null && b != null) {
+                    bonds.add(Bond.harmonicAverageBond(a.grow(), b.grow(), 0.0, 0.0));
+                }
+                if(a != null && c != null) {
+                    bonds.add(Bond.harmonicAverageBond(a.grow(), c.grow(), PI/2.0, PI/2.0));
+                }
+           }
     }
 
     Cell[] cells;
@@ -34,7 +59,7 @@ public class SoftBody {
     public void propagateCells() {
         for(Cell c: cells) {
             cellStatusCallback.accept(c);
-            energy += c.L * c.L * c.I/2.0 + c.vx * c.vx * c.m /2.0 + c.vy * c.vy * c.m /2.0;
+            energy += c.L * c.L * (c.I)/2.0 + c.vx * c.vx * c.m /2.0 + c.vy * c.vy * c.m /2.0;
             c.propagate();
         }
         bodyStatusCallback.accept(this);
@@ -67,6 +92,8 @@ public class SoftBody {
         Cell second = b.b;
         double dx  = - first.x + second.x;
         double dy  = - first.y + second.y;
+        double th1 = first.theta - b.angleA;
+        double th2 = second.theta - b.angleB;
         double d = Math.sqrt(dx*dx + dy*dy);
 
         double l=b.l, E=b.E, k=b.k, c=b.c, D=b.D;
@@ -82,8 +109,8 @@ public class SoftBody {
             }
         }
         b.phi0 = phi;
-        phi += - b.unstressedAngle + b.rotationCounter * 2 * PI;
-        double fShear =l * l * E * (first.theta + second.theta - 2 * phi);
+        phi += b.rotationCounter * 2 * PI;
+        double fShear = 6* l * l * E * (th1 + th2 - 2 * phi);
         assert(d>0.01);
 
 
@@ -92,17 +119,20 @@ public class SoftBody {
         second.fX += -(d - l) * k * dx + fShear * (-1*dy);
         second.fY += -(d - l) * k * dy + fShear * (   dx);
 
-        // first.T  -= 2 * E * l * l * l * (2 * first.theta + second.theta - 3 * phi);
-        // second.T -= 2 * E * l * l * l * (2 * second.theta + first.theta - 3 * phi);
-        first.T  += E * l * l * l * ((-2*second.theta - first.theta  + 3*phi) - 3*(first.theta - second.theta));
-        second.T += E * l * l * l * ((+2*first.theta  + second.theta - 3*phi) - 3*(second.theta - first.theta));
+        first.T  -= 2 * E * l * l * l * (2 * th1 + th2 - 3 * phi);
+        second.T -= 2 * E * l * l * l * (2 * th2 + th1 - 3 * phi);
+        // double k1=1, k2=1;
+        // first.T  += E * l * l * l * ((-k1*second.theta - k2 *first.theta  + (k1+k2)*phi) - 1*(first.theta - second.theta));
+        // second.T += E * l * l * l * ((+k1*first.theta  + k2 * second.theta - (k1+k2)*phi) - 1*(second.theta - first.theta));
 
 
         energy += (d-l)*(d-l)* k/2.0;
-        // energy -= 2 * l * l * l * E * (
-        // sqrd(first.theta + second.theta - 2 * phi) -
-        // (first.theta - phi) * (second.theta - phi) * 1
-        // );
+        energy += 2*l * l * l * E * (
+        sqrd(th1 + th2 - 2 * phi) -
+        (th1 - phi) * (th2 - phi) * 1
+        );
+        // energy += l * l * l * E * (
+        // sqrd(first.theta - second.theta));
         kb = 0;
         kc = 0.0;
         // energy += ka * sqrd(first.theta + - phi) + kb;
@@ -131,7 +161,7 @@ public class SoftBody {
         vYRelative -=  vOrthogonal * dx;
         // System.err.format("orth vel.: %f, orth Damping: %f, Torque: %f, phi %f\n",orthogonalFraction, shearDamping, second.T, phi);
         // System.err.format("fShear: %f, d: %f, dphi: %f, vxR: %f, vyR: %f\n", fShear, d, dphicalc, vXRelative, vYRelative);
-        // System.err.format("dx: %f, dy: %f, phi: %f\n", dx, dy, phi);
+        System.err.format("phi: %f, fShear %f\n", phi, fShear);
         // System.err.format("L1: % 04.8f, L2: % 04.8f\n", first.L, second.L);
         // System.err.format("th1: %f, th2: %f, phi: %f, odf1: %f, odf2: %f\n", first.theta, second.theta, phi, odf1, odf2);
 

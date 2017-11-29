@@ -5,18 +5,20 @@ import util.Math.*;
 public class Bond {
     Cell a, b;
     double phi0;
-    int rotationCounter=0;
+    int rotationCounter;
     double k, E, D, c, l;
-    double unstressedAngle=0;
+    double angleA, angleB;
 
-    public static Bond harmonicAverageBond(Cell a, Cell b, double unstressedAngle) {
+    public static Bond harmonicAverageBond(Cell a, Cell b, double angleA, double angleB) {
         Bond bond = new Bond();
         double dx  = - a.x + b.x;
         double dy  = - a.y + b.y;
-        a.theta = b.theta = Math.atan2(dy, dx) + unstressedAngle;
+        a.theta = Math.atan2(dy, dx) + angleA;
+        b.theta = Math.atan2(dy, dx) + angleB;
         bond.a=a;
         bond.b=b;
-        bond.unstressedAngle = unstressedAngle;
+        bond.angleA = angleA;
+        bond.angleB = angleB;
         bond.k = util.Math.harmonicMean(a.k, b.k);
         bond.E = util.Math.harmonicMean(a.E, b.E);
         bond.D = util.Math.harmonicMean(a.D, b.D);

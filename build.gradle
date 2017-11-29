@@ -30,13 +30,14 @@ dependencies {
 
 task runApp(type: JavaExec) {
     dependsOn classes
+    dependsOn eclipseClasspath
     jvmArgs "-Dorg.lwjgl.util.DebugLoader=true", "-ea"
     classpath sourceSets.main.runtimeClasspath
     main = 'main.Main'
     /*println(commandLine)*/
-    File f = file(".classpath")
+    /*File f = file(".classpath")
     f.write((sourceSets.main.runtimeClasspath
-             + configurations.testCompile).asPath)
+             + configurations.testCompile).asPath)*/
 }
 
 jar {

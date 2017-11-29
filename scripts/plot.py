@@ -5,11 +5,24 @@ import pyqtgraph as pg
 import numpy as np
 import subprocess as sp
 import itertools
-
+import glob, os
+## Switch to using white background and black foreground
+# pg.setConfigOption('background', 'w')
+# pg.setConfigOption('foreground', 'k')
 class ParameterComboBox(QtWidgets.QComboBox):
     def __init__(self, names):
         super().__init__()
         self.addItems(names)
+
+class ChooseDataCombobox(QtWidgets.QComboBox):
+    def __init__(self):
+        self.files = glob.glob("build/test-results/*.dat")
+        self.names = [os.path.basename(f) for f in self.files]
+        self.paths = dict(zip(self.names, self.files));
+        super().__init__()
+        self.addItems(self.names)
+    def getCurrentPath(self):
+        return self.paths[self.currentText()]
 
 class CurveControlWidget(QtWidgets.QGroupBox):
     def __init__(self, mw, active=False, title=""):
@@ -64,12 +77,14 @@ class MainWidget(QtGui.QMainWindow):
         self.setCentralWidget(self.cw)
         self.l = QtGui.QVBoxLayout()
         self.cw.setLayout(self.l)
+        self.fileChooser = ChooseDataCombobox()
+        self.fileChooser.currentIndexChanged.connect(self.updatePlots)
         self.compileButton = QtWidgets.QPushButton("Compile!")
         self.compileButton.clicked.connect(self.recompile)
         self.plotConfig = QtWidgets.QWidget()
         self.plotConfig.setLayout(QtWidgets.QHBoxLayout())
 
-        self.data = np.genfromtxt("plot.dat", names=True)
+        self.loadData()
         self.curveControls = [CurveControlWidget(self, active=True),
                               CurveControlWidget(self),
                               CurveControlWidget(self),
@@ -78,7 +93,9 @@ class MainWidget(QtGui.QMainWindow):
         for w in self.curveControls:
             self.plotConfig.layout().addWidget(w)
         self.plotConfig.layout().addItem(QtWidgets.QSpacerItem(1e9, 1))
+        self.plotConfig.layout().addWidget(self.fileChooser)
         self.plotConfig.layout().addWidget(self.compileButton)
+
         self.l.addWidget(self.plotConfig)
         self.pw = pg.PlotWidget(name='Plot1')  ## giving the plots names allows us to link their axes together
         self.l.addWidget(self.pw)
@@ -89,27 +106,28 @@ class MainWidget(QtGui.QMainWindow):
     def recompile(self):
         sp.run("gradle test", shell=True)
         self.loadData()
-
-    def loadData(self):
-        self.data = np.genfromtxt("plot.dat", names=True)
         self.updatePlots()
 
+    def loadData(self):
+        self.data = np.genfromtxt(self.fileChooser.getCurrentPath(), names=True)
 
     def updatePlots(self):
+        self.loadData()
         self.pw.clear()
         flatui = itertools.cycle(["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"])
         for p, c in zip(self.curveControls, flatui):
             if not p.isChecked():
                 continue
             # curve.setPen('w')  ## white pen
-            curve = self.pw.plot(x=p.xData(), y=p.yData())
+            pen = pg.mkPen(c)
+            curve = self.pw.plot(x=p.xData(), y=p.yData(), symbol='s', symbolPen=pen,
+                                 pen=pen, symbolSize=3.5)
             self.pw.setLabel('left', p.yTitle())
             self.pw.setLabel('bottom', p.xTitle())
             # pw.setXRange(0, 2)
             # pw.setYRange(0, 1e-10)
-            pen = pg.mkPen(c)
-            curve.setPen(pen)
-            curve.setShadowPen(pen, width=6, cosmetic=True)
+            # curve.setPen(pen, symbol='.')
+            # curve.setShadowPen(pen, width=6, cosmetic=True)
 
 
 ## Start Qt event loop unless running in interactive mode or using pyside.

@@ -5,5 +5,10 @@ tempfile.dat
 .gitignore
 .classcache
 build
+*.class
 .gradle
+bin
 .classpath
+.project
+.settings
+*.dat

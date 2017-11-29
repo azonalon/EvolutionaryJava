@@ -1,23 +1,5 @@
 package physics;
 
-enum CellCulture {
-    STIFF(1, 1, 1, 1, 10, 10),
-    SOFT(1, 1, 1, 1, .1, .1),
-    NORMAL(1, 1, 1, 1, 1, 1),
-    HEAVY(10, 10, 1, 1, 1, 1);
-    public Cell grow() {
-        return new Cell(r, m, I, zeta, omega0, E);
-    }
-    CellCulture(double r, double m, double I, double zeta, double omega0, double E) {
-        this.r = r;
-        this.m = m;
-        this.I = I;
-        this.zeta = zeta;
-        this.omega0 = omega0;
-        this.E = E;
-    }
-    double r, m , I, zeta, omega0, E;
-}
 
 public class Cell {
     public static double dt = 0.1;
@@ -61,11 +43,6 @@ public class Cell {
         this.E = E;
         this.c = 2 * zeta * Math.sqrt(m * k);
         this.D = 2 * zeta * Math.sqrt(E * I);
-        this.x = x;
-        this.y = y;
-        this.L = L;
-        this.vx = vx;
-        this.vy = vy;
         assert(this.m > 0);
         assert(this.I > 0);
     }
