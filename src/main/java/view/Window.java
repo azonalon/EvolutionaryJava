@@ -69,7 +69,7 @@ public class Window {
 			glfwGetWindowSize(ID, pWidth, pHeight);
 
 			// Get the resolution of the primary monitor
-			GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+			// GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
 			// Center the window
 			// glfwSetWindowPos(
@@ -100,13 +100,13 @@ public class Window {
 		glfwShowWindow(ID);
 	}
 
-    private void terminateWindow() {
-		// Free the window callbacks and destroy the window
-		glfwFreeCallbacks(ID);
-		glfwDestroyWindow(ID);
-
-		// Terminate GLFW and free the error callback
-		glfwTerminate();
-		glfwSetErrorCallback(null).free();
-    }
+    // private void terminateWindow() {
+	// 	// Free the window callbacks and destroy the window
+	// 	glfwFreeCallbacks(ID);
+	// 	glfwDestroyWindow(ID);
+    //
+	// 	// Terminate GLFW and free the error callback
+	// 	glfwTerminate();
+	// 	glfwSetErrorCallback(null).free();
+    // }
 }

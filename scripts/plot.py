@@ -5,23 +5,41 @@ import pyqtgraph as pg
 import numpy as np
 import subprocess as sp
 import itertools
-import glob, os
+import glob, os, re
 ## Switch to using white background and black foreground
 # pg.setConfigOption('background', 'w')
 # pg.setConfigOption('foreground', 'k')
+observables = {}
+
 class ParameterComboBox(QtWidgets.QComboBox):
     def __init__(self, names):
         super().__init__()
         self.addItems(names)
 
 class ChooseDataCombobox(QtWidgets.QComboBox):
-    def __init__(self):
-        self.files = glob.glob("build/test-results/*.dat")
+    def __init__(self, folderBox):
+        super().__init__()
+        self.folderBox=folderBox
+        self.folderBox.currentIndexChanged.connect(self.updateDataList)
+        self.updateDataList()
+    def updateDataList(self):
+        self.clear()
+        path = self.folderBox.getCurrentFolder()
+        self.files = glob.glob(path+"/*.dat")
         self.names = [os.path.basename(f) for f in self.files]
         self.paths = dict(zip(self.names, self.files));
-        super().__init__()
         self.addItems(self.names)
     def getCurrentPath(self):
+        return self.paths.get(self.currentText(), None)
+
+class ChooseFolderCombobox(QtWidgets.QComboBox):
+    def __init__(self):
+        super().__init__()
+        self.folders = glob.glob("build/test-results/physics/SoftBody/*")
+        self.names = [os.path.basename(f) for f in self.folders]
+        self.paths = dict(zip(self.names, self.folders));
+        self.addItems(self.names)
+    def getCurrentFolder(self):
         return self.paths[self.currentText()]
 
 class CurveControlWidget(QtWidgets.QGroupBox):
@@ -77,12 +95,24 @@ class MainWidget(QtGui.QMainWindow):
         self.setCentralWidget(self.cw)
         self.l = QtGui.QVBoxLayout()
         self.cw.setLayout(self.l)
-        self.fileChooser = ChooseDataCombobox()
-        self.fileChooser.currentIndexChanged.connect(self.updatePlots)
+        self.fileChooser = QtWidgets.QWidget()
+        self.fileChooser.setLayout(QtWidgets.QFormLayout())
+        self.selectFolder = ChooseFolderCombobox()
+        self.selectFile = ChooseDataCombobox(self.selectFolder)
+        self.fileChooser.layout().addRow("Folder", self.selectFolder)
+        self.fileChooser.layout().addRow("File", self.selectFile)
+        self.selectFile.currentIndexChanged.connect(self.updatePlots)
         self.compileButton = QtWidgets.QPushButton("Compile!")
         self.compileButton.clicked.connect(self.recompile)
         self.plotConfig = QtWidgets.QWidget()
         self.plotConfig.setLayout(QtWidgets.QHBoxLayout())
+        self.curveControlArea = QtWidgets.QScrollArea()
+        self.curveControlWidget = QtWidgets.QWidget()
+        self.curveControlWidget.setLayout(QtWidgets.QHBoxLayout())
+        self.curveControlArea.setSizePolicy(QtGui.QSizePolicy(
+            QtGui.QSizePolicy.Minimum,
+            QtGui.QSizePolicy.Minimum,
+            ))
 
         self.loadData()
         self.curveControls = [CurveControlWidget(self, active=True),
@@ -91,10 +121,21 @@ class MainWidget(QtGui.QMainWindow):
                               CurveControlWidget(self),
                               CurveControlWidget(self)]
         for w in self.curveControls:
-            self.plotConfig.layout().addWidget(w)
-        self.plotConfig.layout().addItem(QtWidgets.QSpacerItem(1e9, 1))
+            self.curveControlWidget.layout().addWidget(w)
+        self.chooseCommonObservableX = QtWidgets.QComboBox()
+        self.chooseCommonObservableX.addItems(self.observables)
+        self.chooseCommonObservableY = QtWidgets.QComboBox()
+        self.chooseCommonObservableY.addItems(self.observables)
+        self.chooseCommonObservableX.currentIndexChanged.connect(self.setSameObservables)
+        self.chooseCommonObservableY.currentIndexChanged.connect(self.setSameObservables)
+        assert(len(self.curveControls) >= self.nParticles)
+        self.plotConfig.layout().addWidget(self.curveControlArea)
+        self.curveControlArea.setWidget(self.curveControlWidget)
+        # self.plotConfig.layout().addItem(QtWidgets.QSpacerItem(10, 1))
         self.plotConfig.layout().addWidget(self.fileChooser)
-        self.plotConfig.layout().addWidget(self.compileButton)
+        self.fileChooser.layout().addRow(self.compileButton)
+        self.fileChooser.layout().addRow("All X", self.chooseCommonObservableX)
+        self.fileChooser.layout().addRow("All Y", self.chooseCommonObservableY)
 
         self.l.addWidget(self.plotConfig)
         self.pw = pg.PlotWidget(name='Plot1')  ## giving the plots names allows us to link their axes together
@@ -103,16 +144,29 @@ class MainWidget(QtGui.QMainWindow):
         # self.t.timeout.connect(a)
         self.t.start(50)
 
+    def setSameObservables(self):
+        X = self.chooseCommonObservableX.currentText()
+        Y = self.chooseCommonObservableY.currentText()
+        for i in range(self.nParticles):
+            self.curveControls[i].X.setCurrentText(X + str(i))
+            self.curveControls[i].Y.setCurrentText(Y + str(i))
+
     def recompile(self):
         sp.run("gradle test", shell=True)
         self.loadData()
         self.updatePlots()
 
     def loadData(self):
-        self.data = np.genfromtxt(self.fileChooser.getCurrentPath(), names=True)
+        self.data = np.genfromtxt(self.selectFile.getCurrentPath(), names=True)
+        self.observables = set(re.sub(r"\d+", "", n) for n in self.data.dtype.names if re.match("\w+\d+", n))
+        self.nParticles = max([int(n[-1:]) for n in self.data.dtype.names
+                               if re.match("\w+\d+", n)]) + 1
 
     def updatePlots(self):
-        self.loadData()
+        try:
+            self.loadData()
+        except:
+            return
         self.pw.clear()
         flatui = itertools.cycle(["#9b59b6", "#3498db", "#95a5a6", "#e74c3c", "#34495e", "#2ecc71"])
         for p, c in zip(self.curveControls, flatui):
@@ -120,7 +174,7 @@ class MainWidget(QtGui.QMainWindow):
                 continue
             # curve.setPen('w')  ## white pen
             pen = pg.mkPen(c)
-            curve = self.pw.plot(x=p.xData(), y=p.yData(), symbol='s', symbolPen=pen,
+            self.pw.plot(x=p.xData(), y=p.yData(), symbol='s', symbolPen=pen,
                                  pen=pen, symbolSize=3.5)
             self.pw.setLabel('left', p.yTitle())
             self.pw.setLabel('bottom', p.xTitle())

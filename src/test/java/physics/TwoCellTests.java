@@ -1,3 +1,4 @@
+package physics;
 import physics.*;
 import org.junit.Test;
 import org.junit.Rule;
@@ -129,8 +130,8 @@ public class TwoCellTests
              j++;
         };
         SoftBody.bodyStatusCallback = (bod) -> {
-             simulationResults[i][nCellParams * nCells + 0] = t;
-             simulationResults[i][nCellParams * nCells + 1] = bod.totalEnergy();
+            simulationResults[i][nCellParams * nCells + 0] = t;
+            simulationResults[i][nCellParams * nCells + 1] = bod.totalEnergy();
             i++;
             t += dt;
         };
@@ -141,7 +142,11 @@ public class TwoCellTests
         double[] energies = getColumn(simulationResults, 19);
         String header = makeHeader(nCells);
         try {
-            Files.write(Paths.get("build/test-results/" + name.getMethodName() + ".dat"),
+            Path path =  Paths.get("build/test-results/physics/SoftBody/TwoCell");
+            if(Files.notExists(path)){
+                    Files.createDirectories(path);
+                }
+            Files.write(path.resolve((name.getMethodName() + ".dat")),
                 (header + printGrid(simulationResults)).getBytes()
             );
         } catch(IOException e) {

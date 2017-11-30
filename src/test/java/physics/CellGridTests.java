@@ -1,3 +1,4 @@
+package physics;
 import physics.*;
 import java.util.*;
 import org.junit.Test;
@@ -10,11 +11,14 @@ import java.nio.file.*;
 import static org.junit.Assert.*;
 import static physics.Cell.dt;
 import static util.Math.*;
+import static physics.CellCulture.*;
 
 public class CellGridTests
 {
     // static double[] energies;
     static int stepCounter=0;
+    CellCulture[][] grid;
+    double cellWidth=1, cellHeight=1;
     static double t;
     int i=0, j=0;
 
@@ -23,20 +27,30 @@ public class CellGridTests
 
     static String makeHeader(int nCells) {
         String[] observableNames = {
-            "X", "Y", "Theta",
-            "VX", "VY", "L",
-            "FX", "FY", "T"
+            "     X","     Y"," Theta",
+            "    VX","    VY","     L",
+            "    FX","    FY","     T"
         };
         String header = "";
         for(int i = 0; i < nCells; i++) {
             for(String s: observableNames)
                 header += s + i + " ";
         }
-        header += "Time Energy\n";
+        header += "Time    Energy \n";
         return header;
     }
+    @Test
+    public void fourOnFour() {
+        grid = new CellCulture[][] {
+            {NORMAL, NORMAL},
+            {NORMAL, NORMAL}
+        };
+        cellWidth = 1;
+        cellHeight = 1;
+        executeCellGridTestCase(0.1, 10);
+    }
 
-    public void runTwoCellTestCase(CellCulture[][] grid, double dt, int nSteps) {
+    public void executeCellGridTestCase(double dt, int nSteps) {
         int nCells = grid.length*grid[0].length;
         int nCellParams = 9;
         double[][] simulationResults = new double[nSteps][nCells * nCellParams + 2];
@@ -59,7 +73,7 @@ public class CellGridTests
             t += dt;
         };
 
-        testSimulation(grid, nSteps);
+        testSimulation(dt, nSteps);
         String header = makeHeader(nCells);
         writeResults(simulationResults, header);
 
@@ -73,11 +87,11 @@ public class CellGridTests
 
     void writeResults(double[][] simulationResults, String header) {
         try {
-            Path path =  Paths.get("build/test-results/cellgrid");
+            Path path =  Paths.get("build/test-results/physics/SoftBody/CellGrid");
             if(Files.notExists(path)){
-                    Files.createDirectory(path);
+                    Files.createDirectories(path);
                 }
-            Files.write(Paths.get(name.getMethodName() + ".dat").resolve(path),
+            Files.write(path.resolve((name.getMethodName() + ".dat")),
                 (header + printGrid(simulationResults)).getBytes()
             );
         } catch(IOException e) {
@@ -86,8 +100,9 @@ public class CellGridTests
     }
 
 
-    static void testSimulation(CellCulture[][] grid, int nSteps) {
-        SoftBody bod = new SoftBody(grid);
+    void testSimulation(double deltaT,int nSteps) {
+        SoftBody bod = new SoftBody(grid, cellWidth, cellHeight);
+        physics.Cell.dt = deltaT;
         t = 0;
         for(int i = 0; i < nSteps; i++) {
             bod.updateForces();

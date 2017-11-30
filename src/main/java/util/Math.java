@@ -27,7 +27,7 @@ public class Math {
     }
 
     public static double[] getColumn(double[][] a, int c) {
-        int m = a[0].length;
+        // int m = a[0].length;
         double[] col = new double[a.length];
         for(int i = 0; i < a.length; i++) {
             col[i] = a[i][c];

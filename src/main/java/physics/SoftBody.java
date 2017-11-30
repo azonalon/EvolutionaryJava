@@ -22,21 +22,51 @@ public class SoftBody {
      * @param  CellCulture[][] types  grid of celltype objects
      * @return SoftBody according to celltype grid
      */
-    public SoftBody(CellCulture[][] types) {
+    public SoftBody(CellCulture[][] types, double cellWidth, double cellHeight) {
         Vector<Bond> bonds = new Vector<Bond>();
-        CellCulture a=null, b=null,c=null;
-        for(int row = 0; row<types.length-1; row++)
+        Vector<Cell> cells = new Vector<Cell>();
+        CellCulture upper=null, lower=null,right=null;
+        double x, y;
+        y = 0;
+        for(int row = 0; row<types.length; row++) {
+            x = 0;
+            System.out.println("row" + row);
             for(int col = 0; col<types[row].length; col++) {
-                a = types[row  ][col  ];
-                b = types[row  ][col+1];
-                c = types[row+1][col  ];
-                if(a != null && b != null) {
-                    bonds.add(Bond.harmonicAverageBond(a.grow(), b.grow(), 0.0, 0.0));
+                System.out.println("col" + col);
+                lower = null;
+                right = null;
+                if(row+1 < types.length)
+                    lower = types[row+1][col  ];
+                if(col+1 < types[row].length)
+                    right = types[row  ][col+1];
+                upper = types[row  ][col  ];
+
+                Cell upperCell;
+                if(upper != null) {
+                    upperCell = upper.grow();
+                    cells.add(upperCell);
+                } else {
+                    x += cellWidth;
+                    continue;
                 }
-                if(a != null && c != null) {
-                    bonds.add(Bond.harmonicAverageBond(a.grow(), c.grow(), PI/2.0, PI/2.0));
+                if(right != null) {
+                    Cell rightCell = right.grow();
+                    upperCell.setPosition(x, y);
+                    rightCell.setPosition(x + cellWidth, y);
+                    bonds.add(Bond.harmonicAverageBond(upperCell, rightCell, 0, -PI));
                 }
-           }
+                if(lower != null) {
+                    Cell lowerCell = lower.grow();
+                    upperCell.setPosition(x, y);
+                    lowerCell.setPosition(x, y + cellHeight);
+                    bonds.add(Bond.harmonicAverageBond(upperCell, lowerCell, -PI/2, PI/2));
+                }
+                x += cellWidth;
+            }
+            y += cellHeight;
+        }
+        this.bonds = bonds.toArray(new Bond[bonds.size()]);
+        this.cells = cells.toArray(new Cell[cells.size()]);
     }
 
     Cell[] cells;

@@ -1,5 +1,6 @@
 #!/bin/python3
 import subprocess as sp
+import re
 from scipy.optimize import minimize, basinhopping
 
 def f(x):
@@ -20,3 +21,4 @@ min
 f([0, 0, 0.2])
 min.x
 f(0, 2, 0, 3)
+[a for a in range(20) if a < 10]

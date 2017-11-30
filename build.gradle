@@ -50,3 +50,9 @@ jar {
         attributes("Main-Class": "main.Main" )
     }
 }
+
+test {
+    filter {
+        includeTestsMatching "physics.*"
+    }
+}

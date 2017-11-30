@@ -36,9 +36,9 @@ public class Renderable {
                FloatBuffer positions,  FloatBuffer textureCoordinates,
                IntBuffer indices) {
 
-        this.vertices = vertices;
+        // this.vertices = vertices;
         this.indices = indices;
-        this.uvs = uvs;
+        // this.uvs = uvs;
         this.pipeline = shader;
         modelMatrix = new Matrix4f();
         vaoId = glGenVertexArrays();
