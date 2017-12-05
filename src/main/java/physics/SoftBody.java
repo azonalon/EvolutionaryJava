@@ -8,7 +8,6 @@ import static java.lang.Math.PI;
 // import static System.out.format;
 
 public class SoftBody {
-
     public SoftBody(Cell[] cells, Bond[] bonds) {
         this.cells = cells;
         this.bonds = bonds;
@@ -22,51 +21,47 @@ public class SoftBody {
      * @param  CellCulture[][] types  grid of celltype objects
      * @return SoftBody according to celltype grid
      */
-    public SoftBody(CellCulture[][] types, double cellWidth, double cellHeight) {
-        Vector<Bond> bonds = new Vector<Bond>();
-        Vector<Cell> cells = new Vector<Cell>();
-        CellCulture upper=null, lower=null,right=null;
-        double x, y;
-        y = 0;
-        for(int row = 0; row<types.length; row++) {
+    public SoftBody(Cell[][] cells, double cellWidth, double cellHeight) {
+        Vector<Bond> bondVector = new Vector<Bond>();
+        Vector<Cell> cellVector = new Vector<Cell>();
+        Cell upper, lower, right;
+        double x=0, y=0;
+        y = cellHeight * cells.length;
+        for(int row = 0; row<cells.length; row++) {
             x = 0;
-            System.out.println("row" + row);
-            for(int col = 0; col<types[row].length; col++) {
-                System.out.println("col" + col);
+            System.out.println("y" + y);
+            for(int col = 0; col<cells[row].length; col++) {
+                System.out.println("x" + x);
                 lower = null;
                 right = null;
-                if(row+1 < types.length)
-                    lower = types[row+1][col  ];
-                if(col+1 < types[row].length)
-                    right = types[row  ][col+1];
-                upper = types[row  ][col  ];
+                if(row+1 < cells.length)
+                    lower = cells[row+1][col  ];
+                if(col+1 < cells[row].length)
+                    right = cells[row  ][col+1];
+                upper = cells[row][col];
 
-                Cell upperCell;
                 if(upper != null) {
-                    upperCell = upper.grow();
-                    cells.add(upperCell);
+                    upper.setPosition(col*cellWidth, row*cellHeight);
+                    cellVector.add(upper);
                 } else {
                     x += cellWidth;
                     continue;
                 }
                 if(right != null) {
-                    Cell rightCell = right.grow();
-                    upperCell.setPosition(x, y);
-                    rightCell.setPosition(x + cellWidth, y);
-                    bonds.add(Bond.harmonicAverageBond(upperCell, rightCell, 0, -PI));
+                    bondVector.add(Bond.harmonicAverageBond(upper, right, 0));
                 }
                 if(lower != null) {
-                    Cell lowerCell = lower.grow();
-                    upperCell.setPosition(x, y);
-                    lowerCell.setPosition(x, y + cellHeight);
-                    bonds.add(Bond.harmonicAverageBond(upperCell, lowerCell, -PI/2, PI/2));
+                    bondVector.add(Bond.harmonicAverageBond(upper, lower, +PI/2));
                 }
                 x += cellWidth;
             }
-            y += cellHeight;
+            y -= cellHeight;
         }
-        this.bonds = bonds.toArray(new Bond[bonds.size()]);
-        this.cells = cells.toArray(new Cell[cells.size()]);
+        this.bonds = bondVector.toArray(new Bond[bondVector.size()]);
+        this.cells = cellVector.toArray(new Cell[cellVector.size()]);
+        for(Bond b: bonds) {
+            System.out.println(b);
+        }
     }
 
     Cell[] cells;
@@ -76,6 +71,7 @@ public class SoftBody {
     static boolean startProgram = true;
 
     public static Consumer<Cell> cellStatusCallback = (Cell c)->{};
+    public Consumer<Cell> cellForceCallback  = (Cell c)->{};
     public static Consumer<SoftBody> bodyStatusCallback = (SoftBody b)->{};
     public static Consumer<Bond> bondStatusCallback = (Bond b)->{};
 
@@ -90,6 +86,7 @@ public class SoftBody {
         for(Cell c: cells) {
             cellStatusCallback.accept(c);
             energy += c.L * c.L * (c.I)/2.0 + c.vx * c.vx * c.m /2.0 + c.vy * c.vy * c.m /2.0;
+            cellForceCallback.accept(c);
             c.propagate();
         }
         bodyStatusCallback.accept(this);
@@ -122,15 +119,18 @@ public class SoftBody {
         Cell second = b.b;
         double dx  = - first.x + second.x;
         double dy  = - first.y + second.y;
-        double th1 = first.theta - b.angleA;
-        double th2 = second.theta - b.angleB;
+        double th1 = first.theta;
+        double th2 = second.theta;
         double d = Math.sqrt(dx*dx + dy*dy);
 
         double l=b.l, E=b.E, k=b.k, c=b.c, D=b.D;
 
         dx = dx / d;
         dy = dy / d;
-        double phi = Math.atan2(dy, dx);
+        double phi = circleMod(Math.atan2(dy, dx) - b.angle);
+        // double phi = Math.atan2(dy, dx) - b.angle;
+        // double phi = Math.atan2(dy, dx);
+        System.err.format("phi: %f, b.angle %f\n", phi, b.angle);
         if(b.phi0 * phi < -PI) {
             if(b.phi0 > phi) {
                 b.rotationCounter++;
@@ -141,8 +141,7 @@ public class SoftBody {
         b.phi0 = phi;
         phi += b.rotationCounter * 2 * PI;
         double fShear = 6* l * l * E * (th1 + th2 - 2 * phi);
-        assert(d>0.01);
-
+        assert d>0.01: "Cell distance too small: d="  + d;
 
         first.fX  += (d - l) * k * dx - fShear * (-1*dy);
         first.fY  += (d - l) * k * dy - fShear * (   dx);
@@ -161,37 +160,18 @@ public class SoftBody {
         sqrd(th1 + th2 - 2 * phi) -
         (th1 - phi) * (th2 - phi) * 1
         );
-        // energy += l * l * l * E * (
-        // sqrd(first.theta - second.theta));
-        kb = 0;
-        kc = 0.0;
-        // energy += ka * sqrd(first.theta + - phi) + kb;
-        // energy += kb * E * l * l * l * (sqrd(2 * second.theta + first.theta - 3 * phi) -
-        //                 2*(2*second.theta - 2*phi) * (first.theta - phi));
-        // energy += kc * E * l * l * l * sqrd(2 * first.theta + second.theta - 3 * phi);
-
-        // if(startProgram == true) {
-            // System.err.format("Parameters: k=%f, E=%f, D=%f, c=%f, l=%f, m1=%f, m2=%f\n",
-            //                     k, E, D, c, l, first.m, second.m);
-            // startProgram = false;
-        // }
-
 
         // damping forces
         double vXRelative = first.vx - second.vx;
         double vYRelative = first.vy - second.vy;
         // subtract parts orthogonal to direction vector
         double vOrthogonal = vXRelative * -1 * dy + vYRelative * dx;
-        // double dphi = Math.asin(vOrthogonal * dt/d);
-        // double shearDamping = - D * (first.L - dphicalc + second.L - dphicalc);
-        // orthogonalFraction += shearDamping;
         double odf1 = 1;// - 0.1 * Math.abs(first.L - dphi);
         double odf2 = 1;// - 0.1 * Math.abs(second.L - dphi);
         vXRelative -=  vOrthogonal * -1 * dy;
         vYRelative -=  vOrthogonal * dx;
         // System.err.format("orth vel.: %f, orth Damping: %f, Torque: %f, phi %f\n",orthogonalFraction, shearDamping, second.T, phi);
         // System.err.format("fShear: %f, d: %f, dphi: %f, vxR: %f, vyR: %f\n", fShear, d, dphicalc, vXRelative, vYRelative);
-        System.err.format("phi: %f, fShear %f\n", phi, fShear);
         // System.err.format("L1: % 04.8f, L2: % 04.8f\n", first.L, second.L);
         // System.err.format("th1: %f, th2: %f, phi: %f, odf1: %f, odf2: %f\n", first.theta, second.theta, phi, odf1, odf2);
 

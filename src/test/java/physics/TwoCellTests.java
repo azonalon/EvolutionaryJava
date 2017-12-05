@@ -136,7 +136,7 @@ public class TwoCellTests
             t += dt;
         };
         cells = new Cell[] {a, b};
-        bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0, 0.0)};
+        bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
         physics.Cell.dt = dt;
         testSimulation(cells, bonds, nSteps);
         double[] energies = getColumn(simulationResults, 19);
@@ -175,7 +175,7 @@ public class TwoCellTests
                                    -0.5, 0, 0, -1, 0,
                                      1, 1, 1, 1, 0.5, .1,
                                      0.5, 0, 0.0, 1, 0,
-                                     0.1, 100
+                                     0.01, 5000
                                    );
     }
 

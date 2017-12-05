@@ -1,6 +1,7 @@
 package util;
 import java.util.*;
 import static java.lang.Math.sqrt;
+import static java.lang.Math.PI;
 public class Math {
     public static double standardDeviation(double a[]) {
         int n = a.length;
@@ -16,7 +17,17 @@ public class Math {
         double variance = sq_sum / n;
         return sqrt(variance);
     }
-
+    double mod(double x, double n) {
+        return (x % n) - (x < 0 ? n : 0);
+    }
+    static public double circleMod(double phi) {
+        if(phi < -PI) {
+            return phi + 2 * PI;
+        } else if(phi > PI) {
+            return phi - 2 * PI;
+        }
+        return phi;
+    }
     public static double average(double a[]) {
         int n = a.length;
         double sum = 0;

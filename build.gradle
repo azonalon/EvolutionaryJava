@@ -53,6 +53,10 @@ jar {
 
 test {
     filter {
-        includeTestsMatching "physics.*"
+        /*includeTestsMatching "physics.CellGridTests"*/
+        includeTestsMatching "physics.CellGridTests.fourOnFourStretching"
+        /*includeTestsMatching "physics.TwoCellTests.beamOscillationRotation"*/
+        /*includeTestsMatching "physics.TwoCellTests.dampedRelativeRotation"*/
+        /*includeTestsMatching "physics.TwoCellTests.*"*/
     }
 }

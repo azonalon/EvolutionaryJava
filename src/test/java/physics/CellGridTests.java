@@ -17,8 +17,8 @@ public class CellGridTests
 {
     // static double[] energies;
     static int stepCounter=0;
-    CellCulture[][] grid;
-    double cellWidth=1, cellHeight=1;
+    Cell[][] grid;
+    SoftBody body=null;
     static double t;
     int i=0, j=0;
 
@@ -40,15 +40,52 @@ public class CellGridTests
         return header;
     }
     @Test
-    public void fourOnFour() {
-        grid = new CellCulture[][] {
+    public void fourOnFourStretching() {
+        CellCulture[][] layout = new CellCulture[][] {
             {NORMAL, NORMAL},
             {NORMAL, NORMAL}
         };
-        cellWidth = 1;
-        cellHeight = 1;
-        executeCellGridTestCase(0.1, 10);
+        grid = CellCulture.growArray(layout);
+        double cellWidth = 1;
+        double cellHeight = 1;
+        body = new SoftBody(grid, cellWidth, cellHeight);
+        body.cellForceCallback = (cell) -> {
+            if(cell == grid[0][0])
+            cell.fX += -2;
+            if(cell == grid[1][0])
+            cell.fX += +2;
+        };
+        executeCellGridTestCase(0.1, 3000);
     }
+
+    @Test
+    public void fourOnFourEquilibrium() {
+        CellCulture[][] layout = new CellCulture[][] {
+            {NORMAL, NORMAL},
+            {NORMAL, NORMAL}
+        };
+        grid = CellCulture.growArray(layout);
+        double cellWidth = 1;
+        double cellHeight = 1;
+        body = new SoftBody(grid, cellWidth, cellHeight);
+        body.cellForceCallback = (cell) -> {};
+        executeCellGridTestCase(0.1, 100);
+    }
+
+    @Test
+    public void fourOnFourExpanded() {
+        CellCulture[][] layout = new CellCulture[][] {
+            {NORMAL, NORMAL},
+            {NORMAL, NORMAL}
+        };
+        grid = CellCulture.growArray(layout);
+        double cellWidth = 2;
+        double cellHeight = 2;
+        body = new SoftBody(grid, cellWidth, cellHeight);
+        body.cellForceCallback = (cell) -> {};
+        executeCellGridTestCase(0.1, 100);
+    }
+
 
     public void executeCellGridTestCase(double dt, int nSteps) {
         int nCells = grid.length*grid[0].length;
@@ -101,12 +138,11 @@ public class CellGridTests
 
 
     void testSimulation(double deltaT,int nSteps) {
-        SoftBody bod = new SoftBody(grid, cellWidth, cellHeight);
         physics.Cell.dt = deltaT;
         t = 0;
         for(int i = 0; i < nSteps; i++) {
-            bod.updateForces();
-            bod.propagateCells();
+            body.updateForces();
+            body.propagateCells();
         }
     }
 }

@@ -15,7 +15,7 @@ public class Cell {
         this.k = omega0;
         this.E = E;
         this.c = 2 * zeta * Math.sqrt(m * k);
-        this.D = 2 * zeta * Math.sqrt(E * I);
+        this.D = 2 * zeta * Math.sqrt(32*r*r*r*E * I);
         this.x = x;
         this.y = y;
         this.L = L;
@@ -24,6 +24,7 @@ public class Cell {
         assert(this.m > 0);
         assert(this.I > 0);
     }
+
 
     public void setPosition(double x, double y) {
         this.x = x;
@@ -34,17 +35,7 @@ public class Cell {
     }
 
     public Cell(double r, double m, double I, double zeta, double omega0, double E) {
-        this.m = m;
-        this.I = I;
-        this.zeta = zeta;
-        this.r = r;
-        this.omega0 = omega0;
-        this.k = omega0;
-        this.E = E;
-        this.c = 2 * zeta * Math.sqrt(m * k);
-        this.D = 2 * zeta * Math.sqrt(E * I);
-        assert(this.m > 0);
-        assert(this.I > 0);
+        this(m, I, zeta, omega0, r, E, 0.0, 0.0, 0.0, 0.0, 0.0);
     }
 
     void propagate() {
@@ -65,9 +56,9 @@ public class Cell {
     };
 
     public String toString() {
-        return String.format("x=%4.4f, y=%4.4f, vx=%4.4f, vy=%4.4f, th=%4.4f, L=%4.4f\n",
+        return String.format("Cell(x=%4.4f, y=%4.4f, vx=%4.4f, vy=%4.4f, th=%4.4f, L=%4.4f\n",
                 x, y, vx, vy, theta, L) +
-               String.format("m=%4.4f, I=%4.4f, D=%4.4f, c=%4.4f, k=%4.4f, index=%d\n",
+               String.format("m=%4.4f, I=%4.4f, D=%4.4f, c=%4.4f, k=%4.4f, index=%d)\n",
                m, I, D, c, k, index);
     }
 
