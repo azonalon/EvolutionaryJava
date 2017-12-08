@@ -26,12 +26,12 @@ public class SoftBody {
         Vector<Cell> cellVector = new Vector<Cell>();
         Cell upper, lower, right;
         double x=0, y=0;
-        y = cellHeight * cells.length;
+        y = cellHeight * (cells.length - 1);
         for(int row = 0; row<cells.length; row++) {
             x = 0;
-            System.out.println("y" + y);
+            // System.out.println("y" + y);
             for(int col = 0; col<cells[row].length; col++) {
-                System.out.println("x" + x);
+                // System.out.println("x" + x);
                 lower = null;
                 right = null;
                 if(row+1 < cells.length)
@@ -41,7 +41,7 @@ public class SoftBody {
                 upper = cells[row][col];
 
                 if(upper != null) {
-                    upper.setPosition(col*cellWidth, row*cellHeight);
+                    upper.setPosition(x, y);
                     cellVector.add(upper);
                 } else {
                     x += cellWidth;
@@ -51,7 +51,7 @@ public class SoftBody {
                     bondVector.add(Bond.harmonicAverageBond(upper, right, 0));
                 }
                 if(lower != null) {
-                    bondVector.add(Bond.harmonicAverageBond(upper, lower, +PI/2));
+                    bondVector.add(Bond.harmonicAverageBond(upper, lower, -PI/2));
                 }
                 x += cellWidth;
             }
@@ -59,9 +59,6 @@ public class SoftBody {
         }
         this.bonds = bondVector.toArray(new Bond[bondVector.size()]);
         this.cells = cellVector.toArray(new Cell[cellVector.size()]);
-        for(Bond b: bonds) {
-            System.out.println(b);
-        }
     }
 
     Cell[] cells;
@@ -130,7 +127,7 @@ public class SoftBody {
         double phi = circleMod(Math.atan2(dy, dx) - b.angle);
         // double phi = Math.atan2(dy, dx) - b.angle;
         // double phi = Math.atan2(dy, dx);
-        System.err.format("phi: %f, b.angle %f\n", phi, b.angle);
+        // System.err.format("phi: %f, b.angle %f\n", phi, b.angle);
         if(b.phi0 * phi < -PI) {
             if(b.phi0 > phi) {
                 b.rotationCounter++;

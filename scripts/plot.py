@@ -72,7 +72,7 @@ class ChooseFolderCombobox(QtWidgets.QComboBox):
 
 class CurveControlWidget(QtWidgets.QGroupBox):
     def __init__(self, mw, active=False, title=""):
-        super().__init__()
+        super().__init__(parent=mw)
         self.mw = mw
         self.setCheckable(True)
         self.setChecked(active)
@@ -132,6 +132,59 @@ class CurveControlWidget(QtWidgets.QGroupBox):
             return self.f.text()
         return self.names()[self.Y.currentIndex()]
 
+class AnimationControl(QtWidgets.QGroupBox):
+    def __init__(self):
+        super().__init__()
+        self.setCheckable(True)
+        self.setChecked(False)
+        self.setLayout(QtWidgets.QHBoxLayout())
+        self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.play = QtWidgets.QPushButton("Run")
+        self.stepSelect = QtWidgets.QSpinBox()
+        self.play.setCheckable(True)
+        self.play.toggled.connect(self.togglePlay)
+        self.timer = QtCore.QTimer()
+        self.timer.setInterval(100)
+        self.timer.timeout.connect(self.step)
+        self.stepRight = QtWidgets.QPushButton(">")
+        self.stepLeft = QtWidgets.QPushButton("<")
+        self.stepRight.setAutoRepeat(True)
+        self.stepRight.clicked.connect(self.step)
+        self.stepLeft.clicked.connect(self.stepBack)
+
+        self.layout().addWidget(self.stepSelect)
+        self.layout().addWidget(self.play)
+        self.layout().addWidget(self.stepLeft)
+        self.layout().addWidget(self.stepRight)
+        self.layout().addWidget(self.slider)
+    def setTimePoints(self, nPoints):
+        self.slider.setMinimum(0)
+        self.slider.setMaximum(nPoints-1)
+    def active(self):
+        return self.isChecked()
+    def currentIndex(self):
+        return self.slider.value()
+
+    def step(self):
+        pos = self.slider.value()
+        ds = self.stepSelect.value()
+        if pos+ds < self.slider.maximum():
+            self.slider.setValue(pos+ds)
+        else:
+            self.slider.setValue(0)
+
+    def stepBack(self):
+        pos = self.slider.value()
+        if pos-1 < self.slider.minimum():
+            self.slider.setValue(pos-1)
+        else:
+            self.slider.setValue(self.slider.maximum())
+    def togglePlay(self, checked):
+        if not checked:
+            self.timer.stop()
+        else:
+            self.timer.start()
+
 
 class MainWidget(QtGui.QMainWindow):
     def __init__(self):
@@ -143,6 +196,7 @@ class MainWidget(QtGui.QMainWindow):
         self.setCentralWidget(self.cw)
         self.l = QtGui.QVBoxLayout()
         self.cw.setLayout(self.l)
+        self.animate = AnimationControl()
         self.fileChooser = QtWidgets.QWidget()
         self.fileChooser.setLayout(QtWidgets.QFormLayout())
         self.selectFolder = ChooseFolderCombobox()
@@ -160,11 +214,8 @@ class MainWidget(QtGui.QMainWindow):
             QtGui.QSizePolicy.Minimum,
             ))
 
-        self.curveControls = [CurveControlWidget(self, active=True),
-                              CurveControlWidget(self),
-                              CurveControlWidget(self),
-                              CurveControlWidget(self),
-                              CurveControlWidget(self)]
+        self.curveControls = []
+        self.curveControls = [CurveControlWidget(self, active=True)]
         for w in self.curveControls:
             self.curveControlWidget.layout().addWidget(w)
         self.plotConfig.layout().addWidget(self.curveControlArea)
@@ -181,11 +232,13 @@ class MainWidget(QtGui.QMainWindow):
 
         self.l.addWidget(self.plotConfig)
         self.pw = pg.PlotWidget(name='Plot1')  ## giving the plots names allows us to link their axes together
+        self.l.addWidget(self.animate)
         self.l.addWidget(self.pw)
         self.commonsLoaded  = False
         self.connectStuff()
         self.selectFolder.currentIndexChanged.emit(0)
         self.selectFile.currentIndexChanged.emit(0)
+        self.setSameObservables()
 
     def loadCommonObservablesList(self):
         self.chooseCommonObservableX.clear()
@@ -198,20 +251,34 @@ class MainWidget(QtGui.QMainWindow):
         self.compileButton.clicked.connect(self.recompile)
         self.chooseCommonObservableX.currentIndexChanged.connect(self.setSameObservables)
         self.chooseCommonObservableY.currentIndexChanged.connect(self.setSameObservables)
+        self.animate.slider.valueChanged.connect(self.updatePlots)
 
-        for w in self.curveControls:
-            w.f.editingFinished.connect(self.updatePlots)
-            w.X.currentIndexChanged.connect(self.updatePlots)
-            w.Y.currentIndexChanged.connect(self.updatePlots)
-            w.toggled.connect(self.updatePlots)
+        # for w in self.curveControls:
+        #     w.f.editingFinished.connect(self.updatePlots)
+        #     w.X.currentIndexChanged.connect(self.updatePlots)
+        #     w.Y.currentIndexChanged.connect(self.updatePlots)
+        #     w.toggled.connect(self.updatePlots)
 
     def setSameObservables(self):
         X = self.chooseCommonObservableX.currentText()
         Y = self.chooseCommonObservableY.currentText()
         print("Number of particles: ", self.nParticles)
         for i in range(self.nParticles):
-            self.curveControls[i].X.setCurrentText(X + str(i))
-            self.curveControls[i].Y.setCurrentText(Y + str(i))
+            if i >= len(self.curveControls):
+                w = CurveControlWidget(self, active=True)
+                self.curveControls.append(w)
+                w.X.setCurrentText(X + str(i))
+                w.Y.setCurrentText(Y + str(i))
+                self.curveControlWidget.layout().addWidget(w)
+                w.f.editingFinished.connect(self.updatePlots)
+                w.X.currentIndexChanged.connect(self.updatePlots)
+                w.Y.currentIndexChanged.connect(self.updatePlots)
+                w.toggled.connect(self.updatePlots)
+                w.updateNames()
+            else:
+                self.curveControls[i].X.setCurrentText(X + str(i))
+                self.curveControls[i].Y.setCurrentText(Y + str(i))
+                self.curveControls[i].setChecked(True)
 
     def recompile(self):
         sp.run("gradle test", shell=True)
@@ -219,10 +286,12 @@ class MainWidget(QtGui.QMainWindow):
         self.updatePlots()
 
     def loadData(self):
+        print("loading data")
         self.data = np.genfromtxt(self.selectFile.getCurrentPath(), names=True)
         self.observables = set(re.sub(r"\d+", "", n) for n in self.data.dtype.names if re.match("\w+\d+", n))
-        self.nParticles = max([int(n[-1:]) for n in self.data.dtype.names
-                               if re.match("\w+\d+", n)]) + 1
+        self.nParticles = max([int(re.sub("\D+", "", n)) for n in self.data.dtype.names
+                               if re.match("\D+\d+", n)]) + 1
+        self.animate.setTimePoints(len(self.data["Time"]))
         for w in self.curveControls:
             w.updateNames()
         if not self.commonsLoaded:
@@ -231,6 +300,16 @@ class MainWidget(QtGui.QMainWindow):
 
     def updatePlots(self):
         self.pw.clear()
+        t0 = 0
+        t1 = -1
+        ps=3.5
+        colors = itertools.cycle(solarized[c] for c in ["base0", "yellow", "orange", "red",
+                                               "magenta", "violet", "blue", "cyan",
+                                               "green"])
+        if self.animate.active():
+            t0 = self.animate.currentIndex()
+            t1 = t0 + 1
+            ps=10
         if not hasattr(self, "data"):
             return
         for i, p in enumerate(self.curveControls):
@@ -238,8 +317,8 @@ class MainWidget(QtGui.QMainWindow):
                 continue
             # curve.setPen('w')  ## white pen
             pen = pg.mkPen(next(colors))
-            self.pw.plot(x=p.xData(), y=p.yData(), symbol='s', symbolPen=pen,
-                                 pen=pen, symbolSize=3.5)
+            self.pw.plot(x=p.xData()[t0:t1], y=p.yData()[t0:t1], symbol='s', symbolPen=pen,
+                                 pen=pen, symbolSize=ps)
             self.pw.setLabel('left', p.yTitle())
             self.pw.setLabel('bottom', p.xTitle())
 
