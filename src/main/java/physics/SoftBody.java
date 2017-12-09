@@ -33,7 +33,7 @@ public class SoftBody {
             for(int col = 0; col<cells[row].length; col++) {
                 // System.out.println("x" + x);
                 lower = null;
-                right = null;
+            right = null;
                 if(row+1 < cells.length)
                     lower = cells[row+1][col  ];
                 if(col+1 < cells[row].length)
