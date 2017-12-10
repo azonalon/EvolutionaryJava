@@ -105,12 +105,12 @@ class CurveControlWidget(QtWidgets.QGroupBox):
             yItem = self.names()[0]
         self.Y.clear()
         self.Y.addItems(self.names() + ["f(X)"])
-        self.X.blockSignals(False)
-        self.Y.blockSignals(False)
         if xItem != "" and xItem in self.names():
             self.X.setCurrentText(xItem)
         if yItem != "" and yItem in self.names():
             self.Y.setCurrentText(yItem)
+        self.X.blockSignals(False)
+        self.Y.blockSignals(False)
 
     def xData(self):
         return self.mw.data[self.X.currentText()]
@@ -210,7 +210,7 @@ class MainWidget(QtGui.QMainWindow):
         self.curveControlWidget = QtWidgets.QWidget()
         self.curveControlWidget.setLayout(QtWidgets.QHBoxLayout())
         self.curveControlArea.setSizePolicy(QtGui.QSizePolicy(
-            QtGui.QSizePolicy.Minimum,
+            QtGui.QSizePolicy.Expanding,
             QtGui.QSizePolicy.Minimum,
             ))
 
@@ -297,6 +297,7 @@ class MainWidget(QtGui.QMainWindow):
         if not self.commonsLoaded:
             self.loadCommonObservablesList()
             self.commonsLoaded = True
+        self.updatePlots()
 
     def updatePlots(self):
         self.pw.clear()

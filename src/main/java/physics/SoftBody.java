@@ -82,7 +82,9 @@ public class SoftBody {
     public void propagateCells() {
         for(Cell c: cells) {
             cellStatusCallback.accept(c);
-            energy += c.L * c.L * (c.I)/2.0 + c.vx * c.vx * c.m /2.0 + c.vy * c.vy * c.m /2.0;
+            energy += c.L * c.L * c.I/2.0
+                    + c.vx * c.vx * c.m /2.0
+                    + c.vy * c.vy * c.m /2.0;
             cellForceCallback.accept(c);
             c.propagate();
         }
@@ -124,7 +126,7 @@ public class SoftBody {
 
         dx = dx / d;
         dy = dy / d;
-        double phi = circleMod(Math.atan2(dy, dx) - b.angle);
+        double phi = circleMod(Math.atan2(dx, dy) + b.angle - PI/2);
         // double phi = Math.atan2(dy, dx) - b.angle;
         // double phi = Math.atan2(dy, dx);
         // System.err.format("phi: %f, b.angle %f\n", phi, b.angle);
@@ -137,7 +139,7 @@ public class SoftBody {
         }
         b.phi0 = phi;
         phi += b.rotationCounter * 2 * PI;
-        double fShear = 6* l * l * E * (th1 + th2 - 2 * phi);
+        double fShear = 3.0*E/d * (th1 + th2 + 2 * phi);
         assert d>0.01: "Cell distance too small: d="  + d;
 
         first.fX  += (d - l) * k * dx - fShear * (-1*dy);
@@ -145,18 +147,17 @@ public class SoftBody {
         second.fX += -(d - l) * k * dx + fShear * (-1*dy);
         second.fY += -(d - l) * k * dy + fShear * (   dx);
 
-        first.T  -= 2 * E * l * l * l * (2 * th1 + th2 - 3 * phi);
-        second.T -= 2 * E * l * l * l * (2 * th2 + th1 - 3 * phi);
+        first.T  -= E * (2 * th1 + th2 + 3 * phi);
+        second.T -= E * (2 * th2 + th1 + 3 * phi);
         // double k1=1, k2=1;
         // first.T  += E * l * l * l * ((-k1*second.theta - k2 *first.theta  + (k1+k2)*phi) - 1*(first.theta - second.theta));
         // second.T += E * l * l * l * ((+k1*first.theta  + k2 * second.theta - (k1+k2)*phi) - 1*(second.theta - first.theta));
 
 
-        energy += (d-l)*(d-l)* k/2.0;
-        energy += 2*l * l * l * E * (
-        sqrd(th1 + th2 - 2 * phi) -
-        (th1 - phi) * (th2 - phi) * 1
-        );
+        energy += k/2.0 * (d-l)*(d-l);
+        energy += E * (sqrd(th1 + th2 + 2 * phi) -
+                          (th1 + phi) * (th2 + phi)
+                        );
 
         // damping forces
         double vXRelative = first.vx - second.vx;

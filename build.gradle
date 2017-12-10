@@ -53,11 +53,12 @@ jar {
 
 test {
     filter {
-        /*includeTestsMatching "physics.CellGridTests"*/
         /*includeTestsMatching "physics.CellGridTests.fourOnFourStretching"*/
-        includeTestsMatching "physics.CellGridTests.slurp"
+        /*includeTestsMatching "physics.CellGridTests.fourOnFourStretching"*/
+        /*includeTestsMatching "physics.CellGridTests.slurp"*/
         /*includeTestsMatching "physics.TwoCellTests.beamOscillationRotation"*/
         /*includeTestsMatching "physics.TwoCellTests.dampedRelativeRotation"*/
-        /*includeTestsMatching "physics.TwoCellTests.*"*/
+        includeTestsMatching "physics.TwoCellTests.*"
+        includeTestsMatching "physics.CellGridTests.*"
     }
 }

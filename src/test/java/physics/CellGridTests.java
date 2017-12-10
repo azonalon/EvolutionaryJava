@@ -51,9 +51,9 @@ public class CellGridTests
         body = new SoftBody(grid, cellWidth, cellHeight);
         body.cellForceCallback = (cell) -> {
             if(cell == grid[0][0])
-            cell.fX += -0;
+            cell.fY += +2;
             if(cell == grid[1][0])
-            cell.fX += +2;
+            cell.fY += -2;
         };
         executeCellGridTestCase(0.1, 300);
     }

@@ -99,8 +99,8 @@ public class TwoCellTests
         x1=-0.5, y1= 0.0, vx1=   0.0, vy1= 0.0, L1=+1.0,
         m2= 1.0, I2= 1.0, zeta2= 1.0, k2=  1.0, r2= 0.5, E2= 1.0,
         x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 0.0, L2=+1.0,
-        dt= 0.1;
-        int nSteps = 100;
+        dt= 0.001;
+        int nSteps = 10000;
 
         twoCellTestCase(
             m1, I1, zeta1, k1, r1, E1,
@@ -186,7 +186,7 @@ public class TwoCellTests
                                    -0.5, 0, 0, -1, 0.0,
                                      1, 1, 0, 1, 0.5, 1,
                                      0.5, 0, 0.0, 1, 0.0,
-                                     0.1, 100
+                                     0.001, 10000
                                    );
     }
     @Test
