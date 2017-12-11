@@ -1,17 +1,134 @@
 package physics;
 import physics.*;
-import java.util.*;
+import java.util.ArrayList;
 import static util.Math.*;
 import java.util.function.*;
 import static java.lang.Math.PI;
+import org.la4j.*;
+import org.la4j.vector.*;
+import org.la4j.matrix.*;
 // import static java.lang.Math.sqrt;
 // import static System.out.format;
+import static physics.Cell.dt;
 
 public class SoftBody {
+    public Vector X0; // newly calculated state
+    public Vector X1; // last state
+    public Vector X2; // oldest state
+    public Vector f, v; //for debug
+    Vector M, MI;
+    int m; // number of cells
+    int s; // number of bonds
+
+
     public SoftBody(Cell[] cells, Bond[] bonds) {
+        initializeState(cells, bonds);
+    }
+
+    public void initializeState(Cell[] cells, Bond[] bonds) {
         this.cells = cells;
         this.bonds = bonds;
+        this.m = cells.length;
+        this.s = bonds.length;
+        X0 = DenseVector.zero(m * 3);
+        X1 = DenseVector.zero(m * 3);
+        X2 = DenseVector.zero(m * 3);
+        M = DenseVector.zero(m * 3);
+        MI = DenseVector.zero(m * 3);
+        for(int i = 0; i < m; i++) {
+            Cell c = cells[i];
+
+            cells[i].linkToBody(this);
+            cells[i].index = 3*i;
+            X0.set(3 * i, c.x + c.vx*dt);
+            X0.set(3 * i + 1, c.y + c.vy*dt);
+            X0.set(3 * i + 2, c.theta + c.L*dt);
+
+            X1.set(3 * i, c.x);
+            X1.set(3 * i + 1, c.y);
+            X1.set(3 * i + 2, c.theta);
+
+            M.set(3*i, c.m);
+            M.set(3*i + 1, c.m);
+            M.set(3*i + 2, c.I);
+            MI.set(3*i, 1/c.m);
+            MI.set(3*i + 1, 1/c.m);
+            MI.set(3*i + 2, 1/c.I);
+        }
     }
+    Vector innerForce(Vector X1, Vector X2) {
+        Vector f = DenseVector.zero(m * 3);
+        for(Bond bond: bonds) {
+            int a = bond.a.index;
+            int b = bond.b.index;
+            double dx  = X1.get(b + 0) - X1.get(a + 0);
+            double dy  = X1.get(b + 1) - X1.get(a + 1);
+            double th1 = X1.get(a + 2);
+            double th2 = X1.get(b + 2);
+            double d = Math.sqrt(dx*dx + dy*dy);
+
+            double l=bond.l, E=bond.E, k=bond.k;//, c=bond.c, D=bond.D;
+
+            dx = dx / d;
+            dy = dy / d;
+            double phi = circleMod(Math.atan2(dx, dy) + bond.angle - PI/2);
+            if(bond.phi0 * phi < -PI) {
+                if(bond.phi0 > phi) {
+                    bond.rotationCounter++;
+                } else {
+                    bond.rotationCounter--;
+                }
+            }
+            bond.phi0 = phi;
+            phi += bond.rotationCounter * 2 * PI;
+            double fShear = 3.0*E/d * (th1 + th2 + 2 * phi);
+            assert d>0.01: "Cell distance too small: d="  + d;
+
+            f.set(a + 0, (d - l) * k * dx - fShear * (-1*dy));
+            f.set(a + 1, (d - l) * k * dy - fShear * (   dx));
+            f.set(b + 0, -(d - l) * k * dx + fShear * (-1*dy));
+            f.set(b + 1, -(d - l) * k * dy + fShear * (   dx));
+
+            f.set(a + 2, -E * (2 * th1 + th2 + 3 * phi));
+            f.set(b + 2, -E * (2 * th2 + th1 + 3 * phi));
+
+            energy += 0.5 * (l-d)*(l-d) * k + E * (sqrd(th1 + th2 + 2 * phi) -
+            (th1 + phi) * (th2 + phi)  );
+        }
+        return f;
+    }
+
+    Vector externalForce() {
+        Vector f = DenseVector.zero(m * 3);
+        for(Cell c: cells) {
+            f.set(c.index, c.fX);
+            f.set(c.index + 1, c.fY);
+            f.set(c.index + 2, c.T);
+            c.fX = 0;
+            c.fY = 0;
+            c.T = 0;
+        }
+        return f;
+    }
+
+    void explicitEulerStep() {
+        energy = 0;
+        X2 = X1.copy();
+        X1 = X0.copy();
+        f = innerForce(X1, X2).add(externalForce());
+        X0 = X1.multiply(2.0).add(
+            MI.hadamardProduct(f).multiply(dt*dt).
+            subtract(X2)
+        );
+        v = (X1.subtract(X2)).multiply(1/dt);
+        energy += 0.5 * v.hadamardProduct(M).innerProduct(v);
+        for(Cell c: cells) {
+            cellStatusCallback.accept(c);
+            cellForceCallback.accept(c);
+        }
+        bodyStatusCallback.accept(this);
+    }
+
     /**
      * Creates a SoftBody from an array of predefined cell
      * types. Goes through the whole array and makes bonds
@@ -22,8 +139,8 @@ public class SoftBody {
      * @return SoftBody according to celltype grid
      */
     public SoftBody(Cell[][] cells, double cellWidth, double cellHeight) {
-        Vector<Bond> bondVector = new Vector<Bond>();
-        Vector<Cell> cellVector = new Vector<Cell>();
+        ArrayList<Bond> bondList = new ArrayList<Bond>();
+        ArrayList<Cell> cellList = new ArrayList<Cell>();
         Cell upper, lower, right;
         double x=0, y=0;
         y = cellHeight * (cells.length - 1);
@@ -41,30 +158,32 @@ public class SoftBody {
                 upper = cells[row][col];
 
                 if(upper != null) {
-                    upper.setPosition(x, y);
-                    cellVector.add(upper);
+                    upper.x = x;
+                    upper.y = y;
+                    cellList.add(upper);
                 } else {
                     x += cellWidth;
                     continue;
                 }
                 if(right != null) {
-                    bondVector.add(Bond.harmonicAverageBond(upper, right, 0));
+                    bondList.add(Bond.harmonicAverageBond(upper, right, 0));
                 }
                 if(lower != null) {
-                    bondVector.add(Bond.harmonicAverageBond(upper, lower, -PI/2));
+                    bondList.add(Bond.harmonicAverageBond(upper, lower, -PI/2));
                 }
                 x += cellWidth;
             }
             y -= cellHeight;
         }
-        this.bonds = bondVector.toArray(new Bond[bondVector.size()]);
-        this.cells = cellVector.toArray(new Cell[cellVector.size()]);
+        initializeState(
+            cellList.toArray(new Cell[cellList.size()]),
+            bondList.toArray(new Bond[bondList.size()])
+        );
     }
 
     Cell[] cells;
     Bond[] bonds;
     double energy = 0;
-    public static double ka=0, kb=-0.0, kc=0, kd=0;
     static boolean startProgram = true;
 
     public static Consumer<Cell> cellStatusCallback = (Cell c)->{};
@@ -72,114 +191,7 @@ public class SoftBody {
     public static Consumer<SoftBody> bodyStatusCallback = (SoftBody b)->{};
     public static Consumer<Bond> bondStatusCallback = (Bond b)->{};
 
-    /**
-     * checks if the bond forces between the cells have been added to each cell.
-     * this is a symmetric operation a <--> b
-     * @param  Cell a             [description]
-     * @param  Cell b             [description]
-     * @return      [description]
-     */
-    public void propagateCells() {
-        for(Cell c: cells) {
-            cellStatusCallback.accept(c);
-            energy += c.L * c.L * c.I/2.0
-                    + c.vx * c.vx * c.m /2.0
-                    + c.vy * c.vy * c.m /2.0;
-            cellForceCallback.accept(c);
-            c.propagate();
-        }
-        bodyStatusCallback.accept(this);
-    }
 
-    /**
-     * Initializes forces to zero before each step.
-     * Goes through all the bonds and adds interaction forces to both cells
-     * in the bond
-     */
-    public void updateForces() {
-        energy=0;
-        for(Cell c: cells) {
-            c.fX=0;
-            c.fY=0;
-            c.T=0;
-        }
-        for(Bond bond: bonds) {
-            addBondForces(bond);
-            bondStatusCallback.accept(bond);
-        }
-    }
-
-    /**
-     * Calculates and add forces for the two cells in  a bond.
-     * @param Bond b
-     */
-    void addBondForces(Bond b) {
-        Cell first = b.a;
-        Cell second = b.b;
-        double dx  = - first.x + second.x;
-        double dy  = - first.y + second.y;
-        double th1 = first.theta;
-        double th2 = second.theta;
-        double d = Math.sqrt(dx*dx + dy*dy);
-
-        double l=b.l, E=b.E, k=b.k, c=b.c, D=b.D;
-
-        dx = dx / d;
-        dy = dy / d;
-        double phi = circleMod(Math.atan2(dx, dy) + b.angle - PI/2);
-        // double phi = Math.atan2(dy, dx) - b.angle;
-        // double phi = Math.atan2(dy, dx);
-        // System.err.format("phi: %f, b.angle %f\n", phi, b.angle);
-        if(b.phi0 * phi < -PI) {
-            if(b.phi0 > phi) {
-                b.rotationCounter++;
-            } else {
-                b.rotationCounter--;
-            }
-        }
-        b.phi0 = phi;
-        phi += b.rotationCounter * 2 * PI;
-        double fShear = 3.0*E/d * (th1 + th2 + 2 * phi);
-        assert d>0.01: "Cell distance too small: d="  + d;
-
-        first.fX  += (d - l) * k * dx - fShear * (-1*dy);
-        first.fY  += (d - l) * k * dy - fShear * (   dx);
-        second.fX += -(d - l) * k * dx + fShear * (-1*dy);
-        second.fY += -(d - l) * k * dy + fShear * (   dx);
-
-        first.T  -= E * (2 * th1 + th2 + 3 * phi);
-        second.T -= E * (2 * th2 + th1 + 3 * phi);
-        // double k1=1, k2=1;
-        // first.T  += E * l * l * l * ((-k1*second.theta - k2 *first.theta  + (k1+k2)*phi) - 1*(first.theta - second.theta));
-        // second.T += E * l * l * l * ((+k1*first.theta  + k2 * second.theta - (k1+k2)*phi) - 1*(second.theta - first.theta));
-
-
-        energy += k/2.0 * (d-l)*(d-l);
-        energy += E * (sqrd(th1 + th2 + 2 * phi) -
-                          (th1 + phi) * (th2 + phi)
-                        );
-
-        // damping forces
-        double vXRelative = first.vx - second.vx;
-        double vYRelative = first.vy - second.vy;
-        // subtract parts orthogonal to direction vector
-        double vOrthogonal = vXRelative * -1 * dy + vYRelative * dx;
-        double odf1 = 1;// - 0.1 * Math.abs(first.L - dphi);
-        double odf2 = 1;// - 0.1 * Math.abs(second.L - dphi);
-        vXRelative -=  vOrthogonal * -1 * dy;
-        vYRelative -=  vOrthogonal * dx;
-        // System.err.format("orth vel.: %f, orth Damping: %f, Torque: %f, phi %f\n",orthogonalFraction, shearDamping, second.T, phi);
-        // System.err.format("fShear: %f, d: %f, dphi: %f, vxR: %f, vyR: %f\n", fShear, d, dphicalc, vXRelative, vYRelative);
-        // System.err.format("L1: % 04.8f, L2: % 04.8f\n", first.L, second.L);
-        // System.err.format("th1: %f, th2: %f, phi: %f, odf1: %f, odf2: %f\n", first.theta, second.theta, phi, odf1, odf2);
-
-        first.fX  -= c * vXRelative * odf2;
-        first.fY  -= c * vYRelative * odf2;
-        second.fX += c * vXRelative * odf1;
-        second.fY += c * vYRelative * odf1;
-        first.T  -= D * (first.L - second.L);
-        second.T += D * (first.L - second.L);
-    }
 
     public double totalEnergy() {
         return energy;

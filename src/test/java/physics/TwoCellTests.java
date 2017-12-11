@@ -118,15 +118,15 @@ public class TwoCellTests
         int nCellParams = 9;
         double[][] simulationResults = new double[nSteps][nCells * nCellParams + 2];
         SoftBody.cellStatusCallback = (c) -> {
-             simulationResults[i][0+9*(j%nCells)] = c.x;
-             simulationResults[i][1+9*(j%nCells)] = c.y;
-             simulationResults[i][2+9*(j%nCells)] = c.theta;
-             simulationResults[i][3+9*(j%nCells)] = c.vx;
-             simulationResults[i][4+9*(j%nCells)] = c.vy;
-             simulationResults[i][5+9*(j%nCells)] = c.L;
-             simulationResults[i][6+9*(j%nCells)] = c.fX;
-             simulationResults[i][7+9*(j%nCells)] = c.fY;
-             simulationResults[i][8+9*(j%nCells)] = c.T;
+             simulationResults[i][0+9*(j%nCells)] = c.getX();
+             simulationResults[i][1+9*(j%nCells)] = c.getY();
+             simulationResults[i][2+9*(j%nCells)] = c.getAngle();
+             simulationResults[i][3+9*(j%nCells)] = c.getVX();
+             simulationResults[i][4+9*(j%nCells)] = c.getVY();
+             simulationResults[i][5+9*(j%nCells)] = c.getL();
+             simulationResults[i][6+9*(j%nCells)] = c.getFX();
+             simulationResults[i][7+9*(j%nCells)] = c.getFY();
+             simulationResults[i][8+9*(j%nCells)] = c.getT();
              j++;
         };
         SoftBody.bodyStatusCallback = (bod) -> {
@@ -244,8 +244,7 @@ public class TwoCellTests
         SoftBody bod = new SoftBody(cells, bonds);
         t = 0;
         for(int i = 0; i < nSteps; i++) {
-            bod.updateForces();
-            bod.propagateCells();
+            bod.explicitEulerStep();
         }
     }
 }

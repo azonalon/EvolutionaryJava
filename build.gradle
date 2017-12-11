@@ -24,6 +24,7 @@ dependencies {
     compile "org.lwjgl:lwjgl:${lwjglVersion}:${natives}"
     compile "org.lwjgl:lwjgl-glfw:${lwjglVersion}:${natives}"
     compile "org.lwjgl:lwjgl-opengl:${lwjglVersion}:${natives}"
+    compile "org.la4j:la4j:0.6.0"
     testCompile "junit:junit:4.12"
 }
 
@@ -57,8 +58,8 @@ test {
         /*includeTestsMatching "physics.CellGridTests.fourOnFourStretching"*/
         /*includeTestsMatching "physics.CellGridTests.slurp"*/
         /*includeTestsMatching "physics.TwoCellTests.beamOscillationRotation"*/
-        /*includeTestsMatching "physics.TwoCellTests.dampedRelativeRotation"*/
-        includeTestsMatching "physics.TwoCellTests.*"
+        /*includeTestsMatching "physics.TwoCellTests.symmetricRotationOscillation"*/
+        /*includeTestsMatching "physics.TwoCellTests.*"*/
         includeTestsMatching "physics.CellGridTests.*"
     }
 }
