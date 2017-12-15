@@ -4,19 +4,22 @@ import java.util.ArrayList;
 import static util.Math.*;
 import java.util.function.*;
 import static java.lang.Math.PI;
-import org.la4j.*;
-import org.la4j.vector.*;
-import org.la4j.matrix.*;
+import org.ejml.data.*;
+// import static org.ejml.sparse.csc.CommonOps_DSCC.*;
+// import static org.ejml.simple.ops.SimpleOperations_DDRM.*;
+import static org.ejml.dense.row.CommonOps_DDRM.*;
 // import static java.lang.Math.sqrt;
 // import static System.out.format;
 import static physics.Cell.dt;
 
 public class SoftBody {
-    public Vector X0; // newly calculated state
-    public Vector X1; // last state
-    public Vector X2; // oldest state
-    public Vector f, v; //for debug
-    Vector M, MI;
+    public DMatrixRMaj X0; // newly calculated state
+    public DMatrixRMaj X1; // last state
+    public DMatrixRMaj X2; // oldest state
+    public DMatrixRMaj fInt, v, vSquared, fExt, f; //for debug
+    public DMatrixRMaj M, MI;
+    public DMatrixRMaj temp1, temp2;
+    public DMatrixSparceCSC D;
     int m; // number of cells
     int s; // number of bonds
 
@@ -30,41 +33,51 @@ public class SoftBody {
         this.bonds = bonds;
         this.m = cells.length;
         this.s = bonds.length;
-        X0 = DenseVector.zero(m * 3);
-        X1 = DenseVector.zero(m * 3);
-        X2 = DenseVector.zero(m * 3);
-        M = DenseVector.zero(m * 3);
-        MI = DenseVector.zero(m * 3);
+        X0 = new DMatrixRMaj(m * 3, 1);
+        X1 = new DMatrixRMaj(m * 3, 1);
+        X2 = new DMatrixRMaj(m * 3, 1);
+        fExt = new DMatrixRMaj(m * 3, 1);
+        fInt = new DMatrixRMaj(m * 3, 1);
+        f = new DMatrixRMaj(m * 3, 1);
+        v = new DMatrixRMaj(m * 3, 1);
+        vSquared = new DMatrixRMaj(m * 3, 1);
+        M = new DMatrixRMaj(m * 3, 1);
+        MI = new DMatrixRMaj(m * 3, 1);
+        temp1 = new DMatrixRMaj(m * 3, 1);
+        temp2 = new DMatrixRMaj(m * 3, 1);
         for(int i = 0; i < m; i++) {
             Cell c = cells[i];
 
             cells[i].linkToBody(this);
             cells[i].index = 3*i;
-            X0.set(3 * i, c.x + c.vx*dt);
-            X0.set(3 * i + 1, c.y + c.vy*dt);
-            X0.set(3 * i + 2, c.theta + c.L*dt);
+            X0.set(3 * i, 0, c.x + c.vx*dt);
+            X0.set(3 * i + 1, 0, c.y + c.vy*dt);
+            X0.set(3 * i + 2, 0, c.theta + c.L*dt);
 
-            X1.set(3 * i, c.x);
-            X1.set(3 * i + 1, c.y);
-            X1.set(3 * i + 2, c.theta);
+            X1.set(3 * i, 0, c.x);
+            X1.set(3 * i + 1, 0, c.y);
+            X1.set(3 * i + 2, 0, c.theta);
 
-            M.set(3*i, c.m);
-            M.set(3*i + 1, c.m);
-            M.set(3*i + 2, c.I);
-            MI.set(3*i, 1/c.m);
-            MI.set(3*i + 1, 1/c.m);
-            MI.set(3*i + 2, 1/c.I);
+            M.set(3*i, 0, c.m);
+            M.set(3*i + 1, 0, c.m);
+            M.set(3*i + 2, 0, c.I);
+            MI.set(3*i, 0, 1/c.m);
+            MI.set(3*i + 1, 0, 1/c.m);
+            MI.set(3*i + 2, 0, 1/c.I);
         }
     }
-    Vector innerForce(Vector X1, Vector X2) {
-        Vector f = DenseVector.zero(m * 3);
+    DMatrixSparseCSC Hessian(DMatrixRMaj X) {
+        return D;
+    }
+    DMatrixRMaj innerForce(DMatrixRMaj X1, DMatrixRMaj X2) {
+        fInt.zero();
         for(Bond bond: bonds) {
             int a = bond.a.index;
             int b = bond.b.index;
-            double dx  = X1.get(b + 0) - X1.get(a + 0);
-            double dy  = X1.get(b + 1) - X1.get(a + 1);
-            double th1 = X1.get(a + 2);
-            double th2 = X1.get(b + 2);
+            double dx  = X1.get(b + 0, 0) - X1.get(a + 0, 0);
+            double dy  = X1.get(b + 1, 0) - X1.get(a + 1, 0);
+            double th1 = X1.get(a + 2, 0);
+            double th2 = X1.get(b + 2, 0);
             double d = Math.sqrt(dx*dx + dy*dy);
 
             double l=bond.l, E=bond.E, k=bond.k;//, c=bond.c, D=bond.D;
@@ -84,44 +97,49 @@ public class SoftBody {
             double fShear = 3.0*E/d * (th1 + th2 + 2 * phi);
             assert d>0.01: "Cell distance too small: d="  + d;
 
-            f.set(a + 0, (d - l) * k * dx - fShear * (-1*dy));
-            f.set(a + 1, (d - l) * k * dy - fShear * (   dx));
-            f.set(b + 0, -(d - l) * k * dx + fShear * (-1*dy));
-            f.set(b + 1, -(d - l) * k * dy + fShear * (   dx));
+            fInt.set(a+0, 0, fInt.get(a+0, 0)  +  (d - l) * k * dx - fShear * (-1*dy));
+            fInt.set(a+1, 0, fInt.get(a+1, 0)  +  (d - l) * k * dy - fShear * (   dx));
+            fInt.set(b+0, 0, fInt.get(b+0, 0)  + -(d - l) * k * dx + fShear * (-1*dy));
+            fInt.set(b+1, 0, fInt.get(b+1, 0)  + -(d - l) * k * dy + fShear * (   dx));
 
-            f.set(a + 2, -E * (2 * th1 + th2 + 3 * phi));
-            f.set(b + 2, -E * (2 * th2 + th1 + 3 * phi));
+            fInt.set(a+2, 0, fInt.get(a+2, 0) +  -E * (2 * th1 + th2 + 3 * phi));
+            fInt.set(b+2, 0, fInt.get(b+2, 0) +  -E * (2 * th2 + th1 + 3 * phi));
 
             energy += 0.5 * (l-d)*(l-d) * k + E * (sqrd(th1 + th2 + 2 * phi) -
             (th1 + phi) * (th2 + phi)  );
         }
-        return f;
+        return fInt;
     }
 
-    Vector externalForce() {
-        Vector f = DenseVector.zero(m * 3);
+    DMatrixRMaj externalForce() {
+        fExt.zero();
         for(Cell c: cells) {
-            f.set(c.index, c.fX);
-            f.set(c.index + 1, c.fY);
-            f.set(c.index + 2, c.T);
+           fExt.set(c.index, 0, fExt.get(c.index, 0) +  c.fX);
+           fExt.set(c.index + 1, 0, fExt.get(c.index + 1, 0) + c.fY);
+           fExt.set(c.index + 2, 0, fExt.get(c.index + 2, 0) + c.T);
             c.fX = 0;
             c.fY = 0;
             c.T = 0;
         }
-        return f;
+        return fExt;
     }
 
     void explicitEulerStep() {
         energy = 0;
-        X2 = X1.copy();
-        X1 = X0.copy();
-        f = innerForce(X1, X2).add(externalForce());
-        X0 = X1.multiply(2.0).add(
-            MI.hadamardProduct(f).multiply(dt*dt).
-            subtract(X2)
-        );
-        v = (X1.subtract(X2)).multiply(1/dt);
-        energy += 0.5 * v.hadamardProduct(M).innerProduct(v);
+        X2.set(X1);
+        X1.set(X0);
+        // zero(f, 0, m*3, 0, 1);
+        add(innerForce(X1, X2), externalForce(), f);
+        elementMult(MI, f, f);
+        add(2, X1, -1, X2, X0);
+        add(dt*dt, f, 1, X0, X0);
+        // X0 = X1.multiply(2.0).add(
+        //     MI.hadamardProduct(f).multiply(dt*dt).
+        //     subtract(X2)
+        // );
+        add(-1/dt, X2, 1/dt, X1, v);
+        elementMult(v, v, vSquared);
+        energy += 0.5 * dot(M, vSquared);
         for(Cell c: cells) {
             cellStatusCallback.accept(c);
             cellForceCallback.accept(c);

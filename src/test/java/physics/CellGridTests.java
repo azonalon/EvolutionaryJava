@@ -73,8 +73,10 @@ public class CellGridTests
         body = new SoftBody(grid, cellWidth, cellHeight);
         body.cellForceCallback = (cell) -> {
             if(cell == grid[0][0]) {
-                    cell.fX += 2*Math.sin(0.03 * 2*Math.PI/0.07*t);
-                    cell.fY -= 2*Math.sin(0.03 * 2*Math.PI/0.07*t);
+                if(t < 0.03/0.07) {
+                        cell.fX += 2*Math.sin(0.03 * 2*Math.PI/0.07*t);
+                        cell.fY -= 2*Math.sin(0.03 * 2*Math.PI/0.07*t);
+                    }
                 }
             // if(cell == grid[4][0])
             //     cell.fX += 2*Math.sin(0.01 * 2*Math.PI/0.07*t);
@@ -105,7 +107,7 @@ public class CellGridTests
             // if(cell == grid[4][0])
             //     cell.fX += 2*Math.sin(0.01 * 2*Math.PI/0.07*t);
         };
-        executeCellGridTestCase(0.07, 500 * 2);
+        executeCellGridTestCase(0.07, 20000);
     }
 
     @Test

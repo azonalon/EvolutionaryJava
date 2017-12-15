@@ -44,7 +44,6 @@ class ChooseDataCombobox(QtWidgets.QComboBox):
         super().__init__()
         self.folderBox=folderBox
         self.folderBox.currentIndexChanged.connect(self.updateDataList)
-        self.folderBox.activated.connect(self.updateDataList)
 
     def updateDataList(self):
         print("updating data list...")
@@ -54,7 +53,9 @@ class ChooseDataCombobox(QtWidgets.QComboBox):
         self.files = glob.glob(path+"/*.dat")
         self.names = [os.path.basename(f) for f in self.files]
         self.paths = dict(zip(self.names, self.files));
+        self.paths[""] = "";
         self.addItems(self.names)
+        self.setCurrentText("")
         self.blockSignals(False)
 
     def getCurrentPath(self):
@@ -219,16 +220,18 @@ class MainWidget(QtGui.QMainWindow):
         for w in self.curveControls:
             self.curveControlWidget.layout().addWidget(w)
         self.plotConfig.layout().addWidget(self.curveControlArea)
-        self.curveControlArea.setWidget(self.curveControlWidget)
         # self.plotConfig.layout().addItem(QtWidgets.QSpacerItem(10, 1))
 
         self.chooseCommonObservableX = QtWidgets.QComboBox()
         self.chooseCommonObservableY = QtWidgets.QComboBox()
+        self.toggleAll = QtWidgets.QCheckBox()
+        self.toggleAll.stateChanged.connect(self.toggleActive)
 
         self.plotConfig.layout().addWidget(self.fileChooser)
         self.fileChooser.layout().addRow(self.compileButton)
-        self.fileChooser.layout().addRow("All X", self.chooseCommonObservableX)
-        self.fileChooser.layout().addRow("All Y", self.chooseCommonObservableY)
+        self.fileChooser.layout().addRow("Set X", self.chooseCommonObservableX)
+        self.fileChooser.layout().addRow("Set Y", self.chooseCommonObservableY)
+        self.fileChooser.layout().addRow("Toggle", self.toggleAll)
 
         self.l.addWidget(self.plotConfig)
         self.pw = pg.PlotWidget(name='Plot1')  ## giving the plots names allows us to link their axes together
@@ -239,6 +242,13 @@ class MainWidget(QtGui.QMainWindow):
         self.selectFolder.currentIndexChanged.emit(0)
         self.selectFile.currentIndexChanged.emit(0)
         self.setSameObservables()
+
+    def toggleActive(self, state):
+        for w in self.curveControls:
+            w.setChecked(state)
+
+
+
 
     def loadCommonObservablesList(self):
         self.chooseCommonObservableX.clear()
@@ -265,7 +275,7 @@ class MainWidget(QtGui.QMainWindow):
         print("Number of particles: ", self.nParticles)
         for i in range(self.nParticles):
             if i >= len(self.curveControls):
-                w = CurveControlWidget(self, active=True)
+                w = CurveControlWidget(self, active=False)
                 self.curveControls.append(w)
                 w.X.setCurrentText(X + str(i))
                 w.Y.setCurrentText(Y + str(i))
@@ -279,25 +289,29 @@ class MainWidget(QtGui.QMainWindow):
                 self.curveControls[i].X.setCurrentText(X + str(i))
                 self.curveControls[i].Y.setCurrentText(Y + str(i))
                 self.curveControls[i].setChecked(True)
+        self.curveControlArea.setWidget(self.curveControlWidget)
 
     def recompile(self):
         sp.run("gradle test", shell=True)
+        self.selectFolder.currentIndexChanged.emit(0)
         self.loadData()
         self.updatePlots()
 
     def loadData(self):
         print("loading data")
-        self.data = np.genfromtxt(self.selectFile.getCurrentPath(), names=True)
-        self.observables = set(re.sub(r"\d+", "", n) for n in self.data.dtype.names if re.match("\w+\d+", n))
-        self.nParticles = max([int(re.sub("\D+", "", n)) for n in self.data.dtype.names
-                               if re.match("\D+\d+", n)]) + 1
-        self.animate.setTimePoints(len(self.data["Time"]))
-        for w in self.curveControls:
-            w.updateNames()
-        if not self.commonsLoaded:
-            self.loadCommonObservablesList()
-            self.commonsLoaded = True
-        self.updatePlots()
+        f = self.selectFile.getCurrentPath()
+        if f != '':
+            self.data = np.genfromtxt(f, names=True)
+            self.observables = set(re.sub(r"\d+", "", n) for n in self.data.dtype.names if re.match("\w+\d+", n))
+            self.nParticles = max([int(re.sub("\D+", "", n)) for n in self.data.dtype.names
+                                   if re.match("\D+\d+", n)]) + 1
+            self.animate.setTimePoints(len(self.data["Time"]))
+            for w in self.curveControls:
+                w.updateNames()
+            if not self.commonsLoaded:
+                self.loadCommonObservablesList()
+                self.commonsLoaded = True
+            self.updatePlots()
 
     def updatePlots(self):
         self.pw.clear()
