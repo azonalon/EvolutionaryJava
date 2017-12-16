@@ -158,22 +158,22 @@ public class SoftBody {
             phi += bond.rotationCounter * 2 * PI;
 
             double fS = 3.0*E * (th1 + th2 + 2 * phi);
-            double kdl = k * d * l;
 
 
             assert d>0.01: "Cell distance too small: d="  + d;
 
             double fx1 = (1 - l/d) * k * dx + fS * sy;
-            double fx2 = (1 - l/d) * k * dy - fS * sx;
+            double fy1 = (1 - l/d) * k * dy - fS * sx;
             fInt.set(a+0, 0, fInt.get(a+0, 0) + fx1);
-            fInt.set(a+1, 0, fInt.get(a+1, 0) + fx2);
+            fInt.set(a+1, 0, fInt.get(a+1, 0) + fy1);
             fInt.set(b+0, 0, fInt.get(b+0, 0) - fx1);
-            fInt.set(b+1, 0, fInt.get(b+1, 0) - fx2);
+            fInt.set(b+1, 0, fInt.get(b+1, 0) - fy1);
 
             fInt.set(a+2, 0, fInt.get(a+2, 0) -E * (2 * th1 + th2 + 3 * phi));
             fInt.set(b+2, 0, fInt.get(b+2, 0) -E * (2 * th2 + th1 + 3 * phi));
 
-            updateHessian(a, b, sx, sy, k, E, fS, kdl);
+            double kdl = k * d * l;
+            // updateHessian(a, b, sx, sy, k, E, fS, kdl);
             energy += 0.5 * (l-d)*(l-d) * k + E * (sqrd(th1 + th2 + 2 * phi) -
             (th1 + phi) * (th2 + phi));
         }
