@@ -10,6 +10,7 @@ import static util.PrettyPrint.printGrid;
 import java.nio.file.*;
 import static org.junit.Assert.*;
 import static physics.Cell.dt;
+import static physics.Cell.t;
 import static util.Math.*;
 import static physics.CellCulture.*;
 
@@ -19,7 +20,6 @@ public class CellGridTests
     static int stepCounter=0;
     Cell[][] grid;
     SoftBody body=null;
-    static double t;
     int i=0, j=0;
 
     @Rule
@@ -107,7 +107,7 @@ public class CellGridTests
             // if(cell == grid[4][0])
             //     cell.fX += 2*Math.sin(0.01 * 2*Math.PI/0.07*t);
         };
-        executeCellGridTestCase(0.07, 20000);
+        executeCellGridTestCase(0.01, 20000);
     }
 
     @Test
@@ -135,7 +135,7 @@ public class CellGridTests
         double cellHeight = 2;
         body = new SoftBody(grid, cellWidth, cellHeight);
         body.cellForceCallback = (cell) -> {};
-        executeCellGridTestCase(0.1, 100);
+        executeCellGridTestCase(0.05, 5000);
     }
 
 

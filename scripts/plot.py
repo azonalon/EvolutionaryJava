@@ -53,9 +53,7 @@ class ChooseDataCombobox(QtWidgets.QComboBox):
         self.files = glob.glob(path+"/*.dat")
         self.names = [os.path.basename(f) for f in self.files]
         self.paths = dict(zip(self.names, self.files));
-        self.paths[""] = "";
         self.addItems(self.names)
-        self.setCurrentText("")
         self.blockSignals(False)
 
     def getCurrentPath(self):
@@ -293,7 +291,7 @@ class MainWidget(QtGui.QMainWindow):
 
     def recompile(self):
         sp.run("gradle test", shell=True)
-        self.selectFolder.currentIndexChanged.emit(0)
+        # self.selectFolder.currentIndexChanged.emit(0)
         self.loadData()
         self.updatePlots()
 

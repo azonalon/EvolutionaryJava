@@ -9,14 +9,14 @@ import java.nio.file.*;
 import static org.junit.Assert.*;
 // import static physics.SoftBody.*;
 import static java.lang.Math.PI;
-// import static physics.Cell.dt;
+import static physics.Cell.dt;
+import static physics.Cell.t;
 import static util.Math.*;
 
 public class TwoCellTests
 {
     // static double[] energies;
     static int stepCounter=0;
-    static double t;
     int i=0, j=0;
 
     @Rule
@@ -62,8 +62,8 @@ public class TwoCellTests
         x1=-0.5, y1= 0.0, vx1=   0.0, vy1= 0.0, L1=-1.0,
         m2= 1.0, I2= 1.0, zeta2= 0.1, k2=  1.0, r2= 0.5, E2= 1.0,
         x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 0.0, L2=+1.0,
-        dt= 0.1;
-        int nSteps = 100;
+        dt= 0.01;
+        int nSteps = 10000;
 
         twoCellTestCase(
             m1, I1, zeta1, k1, r1, E1,
@@ -80,8 +80,8 @@ public class TwoCellTests
         x1=-0.5, y1= 0.0, vx1=   0.0, vy1=-1.0, L1=+0.0,
         m2= 1.0, I2= 0.1, zeta2= 1.0, k2=  1.0, r2= 0.5, E2= 0.1,
         x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 1.0, L2=+0.0,
-        dt= 0.1;
-        int nSteps = 100;
+        dt= 0.01;
+        int nSteps = 10000;
 
         twoCellTestCase(
             m1, I1, zeta1, k1, r1, E1,
@@ -99,7 +99,7 @@ public class TwoCellTests
         x1=-0.5, y1= 0.0, vx1=   0.0, vy1= 0.0, L1=+1.0,
         m2= 1.0, I2= 1.0, zeta2= 1.0, k2=  1.0, r2= 0.5, E2= 1.0,
         x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 0.0, L2=+1.0,
-        dt= 0.001;
+        dt= 0.01;
         int nSteps = 10000;
 
         twoCellTestCase(
@@ -165,17 +165,22 @@ public class TwoCellTests
         -0.5, 0, 0, 0, 1,
         1, 1, 1, 1, 0.5, .1,
         0.5, 0, 0.0, 0, -1.0,
-        0.1, 200
+        0.01, 10000
         );
     }
     @Test
     public void dampedSymmetricRotationOscillation() {
+        //  m1,  I1,  zeta1,  k1,  r1,  E1,
+        //  x1,  y1,  vx1,  vy1,  L1,
+        //  m2,  I2,  zeta2,  k2,  r2,  E2,
+        //  x2,  y2,  vx2,  vy2,  L2,
+        //  dt, int nSteps
                                    twoCellTestCase(
-                                   1, 1, 1, 1, 0.5 , .1,
-                                   -0.5, 0, 0, -1, 0,
-                                     1, 1, 1, 1, 0.5, .1,
-                                     0.5, 0, 0.0, 1, 0,
-                                     0.01, 5000
+                                   1, 1, 1, 1, 0.5 , 1,
+                                   -0.5, -0.0, 0, -5, -0.0,
+                                     1, 1, 1, 1, 0.5, 1,
+                                     0.5, 0.0, 0.0, 5, -0.0,
+                                     0.001, 1000
                                    );
     }
 
@@ -183,10 +188,10 @@ public class TwoCellTests
     public void symmetricRotationOscillation() {
                                    twoCellTestCase(
                                    1, 1, 0, 1, 0.5 , 1,
-                                   -0.5, 0, 0, -1, 0.0,
+                                   -0.5, 0, 0, -1, 0.5,
                                      1, 1, 0, 1, 0.5, 1,
-                                     0.5, 0, 0.0, 1, 0.0,
-                                     0.001, 10000
+                                     0.5, 0, 0.0, 1, 0.5,
+                                     0.01, 10000
                                    );
     }
     @Test
@@ -196,7 +201,7 @@ public class TwoCellTests
                                    0, 0, 0, 0, -0.0 * 2 * PI,
                                      1, 1, 1, 1, 0.5, 1,
                                      0, -1, 0.3, 0.0, 0.0 * 2*PI,
-                                     0.1, 100
+                                     0.01, 10000
                                    );
     }
     @Test
@@ -216,7 +221,7 @@ public class TwoCellTests
                                      0, 0, 0, 0, 0,
                                      1, 1, 0, 2 * PI, 0.5, 0,
                                      1.0, 0, 0, 1, 0,
-                                     0.1, 100
+                                     0.01, 10000
                                  );
     }
     @Test
@@ -226,7 +231,7 @@ public class TwoCellTests
                                          -0.7, 0, 1, 0, 0,
                                      1, 1, 0, 2*PI, 0.5, 1,
                                      +0.7, 0, 1, 0, 0,
-                                     0.05, 10000
+                                     0.01, 10000
                                      );
     }
     @Test
@@ -236,7 +241,7 @@ public class TwoCellTests
         -2, 0, 0, -2, 0,
         1, 1, 1, 2*PI, 1, 0,
         2, 0, 0, 2, 0,
-        0.05, 1000
+        0.01, 10000
         );
     }
 

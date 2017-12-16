@@ -30,6 +30,7 @@ public class Bond {
         return bond;
     }
     public String toString() {
-        return "Bond(\na="+a +",\nb="+b+ ")";
+        return String.format("Bond(a=%d, b=%d, phi=%f, k=%f, E=%f, l=%f)",
+                            a.index, b.index, phi0, k, E, l);
     }
 }

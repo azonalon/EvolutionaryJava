@@ -4,14 +4,15 @@ import java.util.ArrayList;
 import static util.Math.*;
 import java.util.function.*;
 import static java.lang.Math.PI;
+// TODO: switch to jalgo for better performance
+// import org.ojalgo.matrix.store.*;
 
 import static org.ejml.sparse.csc.CommonOps_DSCC.*;
 import static org.ejml.dense.row.CommonOps_DDRM.*;
 import org.ejml.data.*;
 
-// import static java.lang.Math.sqrt;
-// import static System.out.format;
 import static physics.Cell.dt;
+import static physics.Cell.t;
 
 public class SoftBody {
     public DMatrixRMaj X0; // newly calculated state
@@ -20,9 +21,10 @@ public class SoftBody {
     public DMatrixRMaj fInt, v, vSquared, fExt, f, fDamp; //for debug
     public DMatrixRMaj M, MI;
     public DMatrixRMaj temp1, temp2;
-    public DMatrixRMaj D;
+    public DMatrixRMaj D1, D2;
     int m; // number of cells
     int s; // number of bonds
+    final double t0 = 0.2;
 
 
     public SoftBody(Cell[] cells, Bond[] bonds) {
@@ -47,20 +49,22 @@ public class SoftBody {
         MI = new DMatrixRMaj(m * 3, 1);
         temp1 = new DMatrixRMaj(m * 3, 1);
         temp2 = new DMatrixRMaj(m * 3, 1);
-        D = new DMatrixRMaj(m *3, m*3);
+        D1 = new DMatrixRMaj(m*3, m*3);
+        D2 = new DMatrixRMaj(m*3, m*3);
         // D = new DMatrixSparseCSC(m *3, m*3, 114 * s);
         for(int i = 0; i < m; i++) {
             Cell c = cells[i];
 
             cells[i].linkToBody(this);
             cells[i].index = 3*i;
-            X0.set(3 * i, 0, c.x + c.vx*dt);
-            X0.set(3 * i + 1, 0, c.y + c.vy*dt);
-            X0.set(3 * i + 2, 0, c.theta + c.L*dt);
 
             X1.set(3 * i, 0, c.x);
             X1.set(3 * i + 1, 0, c.y);
             X1.set(3 * i + 2, 0, c.theta);
+
+            X0.set(3 * i, 0, c.x + c.vx*dt);
+            X0.set(3 * i + 1, 0, c.y + c.vy*dt);
+            X0.set(3 * i + 2, 0, c.theta + c.L*dt);
 
             M.set(3*i, 0, c.m);
             M.set(3*i + 1, 0, c.m);
@@ -85,30 +89,34 @@ public class SoftBody {
         double Dy1t1 = -3*E*sx;
         double Dt1t1 = 2*E;
         double Dt1t2 = E;
+        if(t >= t0 && t < t0 + dt && s < 5) {
+            System.out.format("UHessian: sx=%f, sy=%f, k=%f, E=%f, kdl=%f, fS=%f\n"
+                            , sx, sy, k, E, kdl, fS);
+        }
 
-        addSymmetric(x1, x1,  Dx1x1, D);
-        addSymmetric(x1, y1,  Dx1y1, D);
-        addSymmetric(x1, t1,  Dx1t1, D);
-        addSymmetric(y1, y1,  Dy1y1, D);
-        addSymmetric(y1, t1,  Dy1t1, D);
-        addSymmetric(t1, t1,  Dt1t1, D);
-        addSymmetric(t1, t2,  Dt1t2, D);
+        addSymmetric(x1, x1,  Dx1x1, D1);
+        addSymmetric(x1, y1,  Dx1y1, D1);
+        addSymmetric(x1, t1,  Dx1t1, D1);
+        addSymmetric(y1, y1,  Dy1y1, D1);
+        addSymmetric(y1, t1,  Dy1t1, D1);
+        addSymmetric(t1, t1,  Dt1t1, D1);
+        addSymmetric(t1, t2,  Dt1t2, D1);
 
-        addSymmetric(x2, x2, +Dx1x1, D);
-        addSymmetric(y2, y2, +Dy1y1, D);
-        addSymmetric(x2, y2, +Dx1y1, D);
-        addSymmetric(x2, t2, -Dx1t1, D);
-        addSymmetric(y2, t2, -Dy1t1, D);
-        addSymmetric(t2, t2, +Dt1t1, D);
+        addSymmetric(x2, x2, +Dx1x1, D1);
+        addSymmetric(y2, y2, +Dy1y1, D1);
+        addSymmetric(x2, y2, +Dx1y1, D1);
+        addSymmetric(x2, t2, -Dx1t1, D1);
+        addSymmetric(y2, t2, -Dy1t1, D1);
+        addSymmetric(t2, t2, +Dt1t1, D1);
 
-        addSymmetric(x1, x2, -Dx1x1, D);
-        addSymmetric(x1, y2, -Dx1y1, D);
-        addSymmetric(x1, t2, +Dx1t1, D);
-        addSymmetric(y1, x2, -Dx1y1, D);
-        addSymmetric(y1, y2, -Dy1y1, D);
-        addSymmetric(y1, t2, +Dy1t1, D);
-        addSymmetric(t1, x2, -Dx1t1, D);
-        addSymmetric(t1, y2, -Dy1t1, D);
+        addSymmetric(x1, x2, -Dx1x1, D1);
+        addSymmetric(x1, y2, -Dx1y1, D1);
+        addSymmetric(x1, t2, +Dx1t1, D1);
+        addSymmetric(y1, x2, -Dx1y1, D1);
+        addSymmetric(y1, y2, -Dy1y1, D1);
+        addSymmetric(y1, t2, +Dy1t1, D1);
+        addSymmetric(t1, x2, -Dx1t1, D1);
+        addSymmetric(t1, y2, -Dy1t1, D1);
 
     }
     /**
@@ -169,6 +177,16 @@ public class SoftBody {
             energy += 0.5 * (l-d)*(l-d) * k + E * (sqrd(th1 + th2 + 2 * phi) -
             (th1 + phi) * (th2 + phi));
         }
+        if(t >= t0 && t <= t0 + dt && s < 5) {
+            // System.out.println("Bond");
+            System.out.println(bonds[0].toString());
+            System.out.println("X1");
+            System.out.println(X1.toString());
+            // System.out.println("v");
+            // System.out.println(v.toString());
+            System.out.println("Hessian");
+            System.out.println(D1.toString());
+        }
         return fInt;
     }
 
@@ -189,13 +207,14 @@ public class SoftBody {
         energy = 0;
         X2.set(X1);
         X1.set(X0);
-        D.zero();
+        D2.set(D1);
+        D1.zero();
         fDamp.zero();
         // zero(f, 0, m*3, 0, 1);
-        add(-1/dt, X2, 1/dt, X1, v);
+        add(+1.0/dt, X1,-1.0/dt, X2, v);
         add(innerForce(X1, X2), externalForce(), f);
-        mult(D, v, fDamp);
-        add(-2.0, fDamp, f, f);
+        // mult(D1, v, fDamp);
+        // add(-0.00, fDamp, f, f);
         elementMult(MI, f, f);
 
         add(2, X1, -1, X2, X0);
