@@ -196,7 +196,7 @@ public class CellGridTests
         t = 0;
         for(int i = 0; i < nSteps; i++) {
             body.explicitEulerStep();
-            System.out.format("step %d/%d\n", i, nSteps);
+            // System.out.format("step %d/%d\n", i, nSteps);
         }
     }
 }
