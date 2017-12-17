@@ -146,7 +146,7 @@ public class SoftBody {
             double ey = dy / d;
             double sx = ex / d;
             double sy = ey / d;
-            double phi = circleMod(Math.atan2(ex, ey) + bond.angle - PI/2);
+            double phi = circleMod(Math.atan2(ex, ey) + bond.angle - 1 * PI/2);
             if(bond.phi0 * phi < -PI) {
                 if(bond.phi0 > phi) {
                     bond.rotationCounter++;
@@ -173,7 +173,7 @@ public class SoftBody {
             fInt.set(b+2, 0, fInt.get(b+2, 0) -E * (2 * th2 + th1 + 3 * phi));
 
             double kdl = k * d * l;
-            // updateHessian(a, b, sx, sy, k, E, fS, kdl);
+            updateHessian(a, b, sx, sy, k, E, fS, kdl);
             energy += 0.5 * (l-d)*(l-d) * k + E * (sqrd(th1 + th2 + 2 * phi) -
             (th1 + phi) * (th2 + phi));
         }
@@ -213,8 +213,8 @@ public class SoftBody {
         // zero(f, 0, m*3, 0, 1);
         add(+1.0/dt, X1,-1.0/dt, X2, v);
         add(innerForce(X1, X2), externalForce(), f);
-        // mult(D1, v, fDamp);
-        // add(-0.00, fDamp, f, f);
+        mult(D1, v, fDamp);
+        // add(-1.0, fDamp, f, f);
         elementMult(MI, f, f);
 
         add(2, X1, -1, X2, X0);
