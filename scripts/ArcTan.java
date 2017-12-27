@@ -6,7 +6,7 @@ public class ArcTan {
             x = Math.cos(s);
             y = Math.sin(s);
             System.out.format("%f %f %f %f\n", s,
-            Math.atan(y/x), Math.atan2(x, y), 2*Math.atan(y/(1+x))
+            Math.atan(y/x), Math.atan2(y, x), 2*Math.atan(y/(1+x))
             );
         }
     }

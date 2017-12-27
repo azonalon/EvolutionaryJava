@@ -13,13 +13,9 @@ import static physics.Cell.dt;
 import static physics.Cell.t;
 import static util.Math.*;
 import static physics.CellCulture.*;
-import java.util.function.*;
 
-public class CellGridTests
+public class ImplicitSolver
 {
-    static Consumer<SoftBody> stepFunction;
-    static Consumer<SoftBody> implicit = (bod) -> bod.implicitEulerStep();
-    static Consumer<SoftBody> explicit = (bod) -> bod.explicitEulerStep();
     // static double[] energies;
     static int stepCounter=0;
     static int nSteps = 1000;
@@ -226,9 +222,8 @@ public class CellGridTests
     void testSimulation(double deltaT,int nSteps) {
         physics.Cell.dt = deltaT;
         t = 0;
-        stepFunction = explicit;
         for(int i = 0; i < nSteps; i++) {
-            stepFunction.accept(body);
+            body.explicitEulerStep();
             // System.out.format("step %d/%d\n", i, nSteps);
         }
     }

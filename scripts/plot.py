@@ -214,15 +214,16 @@ class MainWidget(QtGui.QMainWindow):
             ))
 
         self.curveControls = []
-        self.curveControls = [CurveControlWidget(self, active=True)]
-        for w in self.curveControls:
-            self.curveControlWidget.layout().addWidget(w)
+        self.curveControls = []
+        # for w in self.curveControls:
+        #     self.curveControlWidget.layout().addWidget(w)
         self.plotConfig.layout().addWidget(self.curveControlArea)
         # self.plotConfig.layout().addItem(QtWidgets.QSpacerItem(10, 1))
 
         self.chooseCommonObservableX = QtWidgets.QComboBox()
         self.chooseCommonObservableY = QtWidgets.QComboBox()
         self.toggleAll = QtWidgets.QCheckBox()
+        self.addControlButton = QtWidgets.QPushButton("Add Graph")
         self.toggleAll.stateChanged.connect(self.toggleActive)
 
         self.plotConfig.layout().addWidget(self.fileChooser)
@@ -230,6 +231,7 @@ class MainWidget(QtGui.QMainWindow):
         self.fileChooser.layout().addRow("Set X", self.chooseCommonObservableX)
         self.fileChooser.layout().addRow("Set Y", self.chooseCommonObservableY)
         self.fileChooser.layout().addRow("Toggle", self.toggleAll)
+        self.fileChooser.layout().addRow("", self.addControlButton)
 
         self.l.addWidget(self.plotConfig)
         self.pw = pg.PlotWidget(name='Plot1')  ## giving the plots names allows us to link their axes together
@@ -257,6 +259,7 @@ class MainWidget(QtGui.QMainWindow):
     def connectStuff(self):
         self.selectFile.currentIndexChanged.connect(self.loadData)
         self.compileButton.clicked.connect(self.recompile)
+        self.addControlButton.clicked.connect(self.addControl)
         self.chooseCommonObservableX.currentIndexChanged.connect(self.setSameObservables)
         self.chooseCommonObservableY.currentIndexChanged.connect(self.setSameObservables)
         self.animate.slider.valueChanged.connect(self.updatePlots)
@@ -266,6 +269,17 @@ class MainWidget(QtGui.QMainWindow):
         #     w.X.currentIndexChanged.connect(self.updatePlots)
         #     w.Y.currentIndexChanged.connect(self.updatePlots)
         #     w.toggled.connect(self.updatePlots)
+    def addControl(self):
+        w = CurveControlWidget(self, active=False)
+        self.curveControls.append(w)
+        w.X.setCurrentText('X0')
+        w.Y.setCurrentText('Y0')
+        self.curveControlWidget.layout().addWidget(w)
+        w.f.editingFinished.connect(self.updatePlots)
+        w.X.currentIndexChanged.connect(self.updatePlots)
+        w.Y.currentIndexChanged.connect(self.updatePlots)
+        w.toggled.connect(self.updatePlots)
+        w.updateNames()
 
     def setSameObservables(self):
         X = self.chooseCommonObservableX.currentText()

@@ -5,16 +5,16 @@ import util.Math.*;
 
 public class Bond {
     Cell a, b;
-    double phi0;
+    double nu0;
     int rotationCounter;
-    double k, E, D, c, l;
+    double k, E, alpha, zeta, l;
     double angle;
 
     public static Bond harmonicAverageBond(Cell a, Cell b, double angle) {
         Bond bond = new Bond();
         double dx  = - a.x + b.x;
         double dy  = - a.y + b.y;
-        bond.phi0 = Math.atan2(dy, dx);
+        bond.nu0 = Math.atan2(dy, dx);
         a.theta = 0;
         b.theta = 0;
         bond.angle  = angle;
@@ -23,14 +23,14 @@ public class Bond {
         bond.k = util.Math.harmonicMean(a.k, b.k);
 
         bond.E = util.Math.harmonicMean(a.E, b.E);
-        bond.D = util.Math.harmonicMean(a.D, b.D);
-        bond.c = util.Math.harmonicMean(a.c, b.c);
+        bond.zeta = util.Math.harmonicMean(a.zeta, b.zeta);
+        bond.alpha = util.Math.harmonicMean(a.alpha, b.alpha);
         bond.l = a.r + b.r;
         bond.rotationCounter = 0;
         return bond;
     }
     public String toString() {
         return String.format("Bond(a=%d, b=%d, phi=%f, k=%f, E=%f, l=%f)",
-                            a.index, b.index, phi0, k, E, l);
+                            a.index, b.index, nu0, k, E, l);
     }
 }

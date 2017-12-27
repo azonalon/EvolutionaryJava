@@ -59,9 +59,11 @@ test {
         /*includeTestsMatching "physics.CellGridTests.fourOnFourStretching"*/
         /*includeTestsMatching "physics.CellGridTests.slurp"*/
         /*includeTestsMatching "physics.TwoCellTests.beamOscillationRotation"*/
-        /*includeTestsMatching "physics.TwoCellTests.dampedSymmetricRotationOscillation"*/
+        includeTestsMatching "physics.TwoCellTests.dampedSymmetricRotationOscillation"
         /*includeTestsMatching "physics.TwoCellTests.dampedAbsoluteRotation"*/
-        includeTestsMatching "physics.TwoCellTests.*"
-        /*includeTestsMatching "physics.CellGridTests.*"*/
+        /* includeTestsMatching "physics.TwoCellTests.symmetricRotationOscillation" */
+        /* includeTestsMatching "physics.TwoCellTests.*" */
+        /* includeTestsMatching "physics.TwoCellTests.testotesto" */
+        /* includeTestsMatching "physics.CellGridTests.*" */
     }
 }
