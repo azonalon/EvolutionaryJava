@@ -63,6 +63,7 @@ class ChooseFolderCombobox(QtWidgets.QComboBox):
     def __init__(self):
         super().__init__()
         self.folders = glob.glob("build/test-results/physics/SoftBody/*")
+        self.folders = [f for f in self.folders if 'ScanLine' not in f]
         self.names = [os.path.basename(f) for f in self.folders]
         self.paths = dict(zip(self.names, self.folders));
         self.addItems(self.names)

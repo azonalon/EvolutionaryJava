@@ -19,11 +19,10 @@ public class CellGridTests
 {
     static Consumer<SoftBody> stepFunction;
     static Consumer<SoftBody> implicit = (bod) -> bod.implicitEulerStep();
-    static Consumer<SoftBody> explicit = (bod) -> bod.explicitEulerStep();
     // static double[] energies;
     static int stepCounter=0;
-    static int nSteps = 1000;
-    static double dt = 0.0665;
+    static int nSteps = 3;
+    static double dt = 0.1;
     Cell[][] grid;
     SoftBody body=null;
     int i=0, j=0;
@@ -61,6 +60,21 @@ public class CellGridTests
             if(cell == grid[1][0])
             cell.fY += -2;
         };
+        executeCellGridTestCase(dt, nSteps);
+    }
+
+    @Test
+    public void twoOnTwoSimpleMovement() {
+        CellCulture[][] layout = new CellCulture[][] {
+            {NORMAL, NORMAL},
+            {NORMAL, NORMAL}
+        };
+        grid = CellCulture.growArray(layout);
+        double cellWidth = 1;
+        double cellHeight = 1;
+        body = new SoftBody(grid, cellWidth, cellHeight);
+        grid[0][0].setVelocity(1, 0.5);
+        grid[1][1].setVelocity(-1, 0.8);
         executeCellGridTestCase(dt, nSteps);
     }
 
@@ -226,7 +240,7 @@ public class CellGridTests
     void testSimulation(double deltaT,int nSteps) {
         physics.Cell.dt = deltaT;
         t = 0;
-        stepFunction = explicit;
+        stepFunction = implicit;
         for(int i = 0; i < nSteps; i++) {
             stepFunction.accept(body);
             // System.out.format("step %d/%d\n", i, nSteps);

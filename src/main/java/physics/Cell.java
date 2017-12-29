@@ -71,6 +71,10 @@ public class Cell {
         body.X0.set(this.index + 0, x);
         body.X0.set(this.index + 1, x);
     }
+    public void setVelocity(double vx, double vy) {
+        body.X1.set(this.index + 0, body.X0.get(this.index + 0) - dt*vx);
+        body.X1.set(this.index + 1, body.X0.get(this.index + 1) - dt*vy);
+    }
     public void setAngle(double theta) {
         body.X0.set(this.index + 2, x);
     }

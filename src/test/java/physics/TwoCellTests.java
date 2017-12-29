@@ -17,11 +17,14 @@ import static util.Math.*;
 public class TwoCellTests
 {
     // static double[] energies;
+    Cell[] cells = null;
+    Bond[] bonds = null;
+    static BiConsumer<Cell, Double> forceA = (c, t)->{};
+    static BiConsumer<Cell, Double> forceB = (c, t)->{};
     static Consumer<SoftBody> stepFunction;
     static Consumer<SoftBody> implicit = (bod) -> bod.implicitEulerStep();
-    static Consumer<SoftBody> explicit = (bod) -> bod.explicitEulerStep();
-    int nSteps = 20;
-    double dt = 2;
+    int nSteps = 200;
+    double dt = 0.5;
     static int stepCounter=0;
     int i=0, j=0;
 
@@ -96,6 +99,28 @@ public class TwoCellTests
             dt, nSteps
         );
     }
+    @Test
+    public void externalForce(){
+        double
+        m1= 1.0, I1= 0.1, zeta1= 1.0, k1=  1.0, r1= 0.5, E1= 0.1,
+        x1=-0.5, y1= 0.0, vx1=   0.0, vy1=-1.0, L1=+0.0,
+        m2= 1.0, I2= 0.1, zeta2= 1.0, k2=  1.0, r2= 0.5, E2= 0.1,
+        x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 1.0, L2=+0.0,
+        dt= 0.01;
+        forceA = (cell, t) -> {cell.fX = 1*Math.sin(2*Math.PI * t * 1e-1/dt);};
+        forceB = (cell, t) -> {
+            cell.fY = 1*Math.sin(2*Math.PI * t * 1e-1/dt);
+            System.out.format("t=%g\n", t);
+        };
+        // forceB = (cell) -> {cell.fY += 4;};
+        twoCellTestCase(
+            m1, I1, zeta1, k1, r1, E1,
+            x1, y1, vx1, vy1, L1,
+            m2, I2, zeta2, k2, r2, E2,
+            x2, y2, vx2, vy2, L2,
+            dt, nSteps
+        );
+    }
 
     @Test
     public void dampedAbsoluteRotation (){
@@ -116,8 +141,6 @@ public class TwoCellTests
     }
 
     public void runTwoCellTestCase(Cell a, Cell b, double dtt, int nSteps) {
-        Cell[] cells = null;
-        Bond[] bonds = null;
         int nCells = 2;
         int nCellParams = 9;
         double[][] simulationResults = new double[nSteps][nCells * nCellParams + 2];
@@ -137,7 +160,7 @@ public class TwoCellTests
             simulationResults[i][nCellParams * nCells + 0] = t;
             simulationResults[i][nCellParams * nCells + 1] = bod.totalEnergy();
             i++;
-            t += physics.Cell.dt;
+            t += dt;
         };
         cells = new Cell[] {a, b};
         bonds = new Bond[] {Bond.harmonicAverageBond(a, b, 0.0)};
@@ -252,6 +275,12 @@ public class TwoCellTests
 
     static void testSimulation(Cell[] cells, Bond[] bonds, int nSteps) {
         SoftBody bod = new SoftBody(cells, bonds);
+        bod.cellForceCallback = (cell) -> {
+            if(cell == cells[0])
+                forceA.accept(cell, t);
+            if(cell == cells[1])
+                forceB.accept(cell, t);
+        };
         stepFunction = implicit;
         t = 0;
         for(int i = 0; i < nSteps; i++) {

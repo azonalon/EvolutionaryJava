@@ -4,6 +4,7 @@ import java.io.*;
 import physics.*;
 import java.util.ArrayList;
 import static util.Math.*;
+import static org.junit.Assert.*;
 import java.util.function.*;
 import static java.lang.Math.PI;
 // TODO: switch to jalgo for better performance
@@ -16,8 +17,12 @@ import org.ejml.data.*;
 
 import static physics.Cell.dt;
 import static physics.Cell.t;
+import org.apache.logging.log4j.*;
+import static org.apache.logging.log4j.Level.*;
 
 public class SoftBody {
+    public static final boolean DEVEL = true;
+    private static final Logger log = LogManager.getLogger();
     public DMatrixRMaj X0; // newly calculated state
     public DMatrixRMaj X1; // last state
     public DMatrixRMaj X2; // oldest state
@@ -26,7 +31,7 @@ public class SoftBody {
     public DMatrixRMaj M, MI, DC; // mass, inverse mass, damping coefficient
     public DMatrixRMaj temp1, temp2;
     public DMatrixRMaj D1, D2;
-    public double phi0, dphi0;
+    public double phi, dphi;
     public int i;
     int m; // number of cells
     int s; // number of bonds
@@ -137,7 +142,7 @@ public class SoftBody {
         double Dt1t1 =  2*E;
         double Dt1t2 =  E;
         // if(t >= t0 && t < t0 + dt && s < 5) {
-        //     System.out.format("UHessian: sx=%f, sy=%f, k=%f, E=%f, kdl=%f, fS=%f\n"
+        //     if(DEVEL) log.printf(DEBUG, "UHessian: sx=%f, sy=%f, k=%f, E=%f, kdl=%f, fS=%f\n"
         //                     , sx, sy, k, E, kdl, fS);
         // }
 
@@ -170,7 +175,7 @@ public class SoftBody {
      * M_ij -> M_ij + X
      * M_ji -> M_ij + X
      */
-    void addSymmetric(int i, int j, double x, DMatrixRMaj M) {
+    final void addSymmetric(int i, int j, double x, DMatrixRMaj M) {
         double x0 = M.get(i, j);
         M.set(i, j, x0 + x);
         if(i != j)
@@ -178,7 +183,7 @@ public class SoftBody {
     }
 
 
-    void updateEnergyForce() {
+    final void updateEnergyForce() {
         fInt.zero();
         eInt = 0;
         for(Bond bond: bonds) {
@@ -211,7 +216,7 @@ public class SoftBody {
         }
     }
 
-    void updateStressForceEnergy() {
+    final void updateStressForceEnergy() {
         D1.zero();
         fInt.zero();
         eInt = 0;
@@ -247,18 +252,18 @@ public class SoftBody {
             addStress(k, E, d, l,sx, sy, fS, a, b);
         }
         // if(t >= t0 && t <= t0 + dt && s < 5) {
-            // System.out.println("Bond");
-            // System.out.println(bonds[0].toString());
-            // System.out.println("X1");
-            // System.out.println(X1.toString());
-            // System.out.println("v");
-            // System.out.println(v.toString());
-            // System.out.println("Hessian");
-            // System.out.println(D1.toString());
+            // if(DEVEL) log.debug("Bond");
+            // if(DEVEL) log.debug(bonds[0].toString());
+            // if(DEVEL) log.debug("X1");
+            // if(DEVEL) log.debug(X1.toString());
+            // if(DEVEL) log.debug("v");
+            // if(DEVEL) log.debug(v.toString());
+            // if(DEVEL) log.debug("Hessian");
+            // if(DEVEL) log.debug(D1.toString());
         // }
     }
 
-    DMatrixRMaj updateExternalForce() {
+    final DMatrixRMaj updateExternalForce() {
         fExt.zero();
         for(Cell c: cells) {
            fExt.set(c.index, 0, fExt.get(c.index, 0) +  c.fX);
@@ -271,8 +276,7 @@ public class SoftBody {
         return fExt;
     }
 
-    double newtonStep(DMatrixRMaj X0, DMatrixRMaj XHat, DMatrixRMaj v,
-                    DMatrixRMaj G, DMatrixRMaj H, DMatrixRMaj dX) {
+    final double newtonStep(){
         double dE;
         // mult(M, G, temp1);
         // negative sign because Nabla E = -f
@@ -283,43 +287,178 @@ public class SoftBody {
         return dE;
     }
 
-    double stableNewtonStep(DMatrixRMaj X0, DMatrixRMaj XHat, DMatrixRMaj V0,
-                    DMatrixRMaj G, DMatrixRMaj H) {
-
-
+    final double stableNewtonStep() {
         double k = 1e-2;
         double alpha = 1;
         double alphaMax  = 1e3;
 
         // compute the step
+        add(1/dt, X0, -1/dt, X1, V0);
         updateStressForceEnergy();
         calculatePhiGradient();
+        double dE = dot(G, G);
+        if(dE <= 1e-20) {
+            return 0.0;
+        }
         calculateHessian();
-
         invert(H, H);
         mult(-1, H, G, dX);
         // make sure dX is suitable
-        double dE = dot(G, G);
-        System.out.format("dE = %8.12f , phi0=%8.12f, eInt=%8.12f\n", dE, phi0, eInt);
+        if(DEVEL) log.printf(DEBUG, "dE = %8.12f , phi0=%8.12f, eInt=%8.12f\n", dE, phi, eInt);
         double dx = dot(dX, dX);
-        dphi0 = dot(dX, G);
-        double dXdE = dphi0 * dphi0 * Math.signum(dphi0);
+        dphi = dot(dX, G);
+        double dXdE = dphi * dphi * Math.signum(dphi);
         if(dXdE < -k*dx*dE) {
             // dx is suitable
-            // System.out.format("dX is suitable! dXdE=%g, dX dE=%g\n", dXdE, dx*dE);
+            // if(DEVEL) log.printf(DEBUG, "dX is suitable! dXdE=%g, dX dE=%g\n", dXdE, dx*dE);
         }
         else if(dXdE > k*dx*dE) {
             // -dx is suitable
-            System.out.format("-dX is suitable! dXdE=%g, dX dE=%g\n", dXdE, dx*dE);
-            alpha = -alpha;
+            if(DEVEL) log.printf(DEBUG, "-dX is suitable! dXdE=%g, dX dE=%g\n", dXdE, dx*dE);
+            dphi = - dphi;
+            scale(-1, dX, dX);
         }
         else {
-            System.out.format("Gradient is suitable! dXdE=%g, dX dE=%g\n", dXdE, dx*dE);
+            if(DEVEL) log.printf(DEBUG, "Gradient is suitable! dXdE=%g, dX dE=%g\n", dXdE, dx*dE);
             dX.set(G);
         }
         strongWolfeLineSearch(alpha, alphaMax);
         dE = dot(G, G);
         return dE;
+    }
+
+    final double strongWolfeLineSearch(double alpha, double alphaMax) {
+        double phiS  = phi;
+        double dphiS = dphi;
+        double alpha0 = 0;
+        double alpha1 = alpha;
+        double phi0 = phi;
+        double dphi0 = dphi;
+        double phi1 = phi;
+        double dphi1 = dphi;
+        double c1  = 1e-2;
+        double c2  = 1e-2;
+        scanLineToFile(4*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, i));
+        int j = 1;
+        // lineSearchStep(alpha);
+        if(DEVEL) log.debug("Line search start.");
+        while(j<5) {
+            lineSearchStep(alpha1 - alpha0);
+            phi1 = phi;
+            dphi1 = dphi;
+            if(phi1 > phiS + c1*alpha1*dphiS || (j>1 && phi1 >= phi0)) {
+                if(DEVEL) log.printf(DEBUG, "Case phi is too big: phiS=%g, phi=%g\n",
+                                  phiS, phiS + c1*alpha*dphiS);
+                alpha1 = zoom(alpha0, phi0, dphi0, alpha1, phi1, dphi1,
+                              phiS, dphiS, c1, c2,
+                              alpha0, phi0, dphi0, alpha1, phi1, dphi1);
+                if(DEVEL) log.printf(DEBUG, "Zoom returned with alpha=%g\n", alpha1);
+                break;
+            }
+            if(Math.abs(dphi1) <= -c2*dphiS) {
+                if(DEVEL) log.printf(DEBUG, "Case phi is small enough and dphi is small enough:\n    phiS=%g, phi=%g, dphiS=%g, dphi=%g\n",
+                                  phiS, phi1, dphiS, dphi1);
+                if(DEVEL) log.printf(DEBUG, "LineSearch returned with alpha=%g\n", alpha1);
+                break;
+            }
+            if(dphi1 >= 0) {
+                if(DEVEL) log.printf(DEBUG, "Case phi is small and dphi is big and positive:\n    phiS=%g, dphiS=%g, phi=%g, dphi=%g\n", phiS, dphiS, phi, dphi);
+                alpha1 = zoom(alpha1, phi1, dphi1, alpha0, phi0, dphi0,
+                              phiS, dphiS, c1, c2,
+                              alpha0, phi0, dphi0, alpha1, phi1, dphi1);
+                if(DEVEL) log.printf(DEBUG, "Zoom returned with alpha=%g\n", alpha1);
+                break;
+            }
+            if(DEVEL) log.printf(DEBUG, "Case phi is small and dphi is big and negative:\n    dphiS=%g, dphi=%g\n", dphiS, dphi);
+            alpha0 = alpha1;
+            phi0 = phi1;
+            dphi0 = dphi1;
+            alpha1 = choose(alpha1, phi, dphi, alphaMax);
+            phi1 = phi;
+            dphi1 = dphi;
+            j++;
+        }
+        if(DEVEL) log.debug("Line search end.");
+        return 0.0;
+    }
+
+    final double zoom(double lo, double philo, double dphilo,
+                      double hi, double phihi, double dphihi,
+                      double phiS, double dphiS, double c1, double c2,
+                      double alpha0, double phi0, double dphi0,
+                      double alpha1, double phi1, double dphi1) {
+        int j = 0;
+        double alpha;
+        if(DEVEL) log.debug("Zoom start.");
+        while(j < 30) {
+            alpha = interpolate(lo, philo, dphilo, hi, phihi, dphihi);
+            if(DEVEL) log.printf(DEBUG, "Interp: lo=%g, philo=%g, dlo=%g,\n"+
+                              "        hi=%g, phihi=%g, dhi=%g, alpha=%g\n",
+                               lo, philo, dphilo, hi, phihi, dphihi, alpha);
+            assert(alpha != Double.NaN);
+            lineSearchStep(alpha - alpha1);
+            if(phi > phiS + c1*alpha*dphiS || (phi >= philo)) {
+                hi = alpha;
+                phihi = phi;
+                dphihi = dphi;
+            } else {
+                if(Math.abs(dphi) <= -c2*dphiS) {
+                    return alpha;
+                }
+                if(dphi*(hi - lo) >= 0) {
+                    hi = lo;
+                    phihi = philo;
+                    dphihi = dphilo;
+                }
+                lo = alpha;
+                philo = phi;
+                dphilo = dphi;
+            }
+            alpha0 = alpha1;
+            phi0 = phi1;
+            dphi0 = dphi1;
+            phi1 = phi;
+            dphi1 = dphi;
+            alpha1 = alpha;
+            j++;
+        }
+        if(DEVEL) throw new RuntimeException("Zoom did not converge");
+        return -1;
+    }
+
+    final static double interpolate(double a, double fa, double dfa,
+                             double b, double fb, double dfb) {
+        double c = 0.1;
+        double d = b - a;
+        double s = Math.signum(d);
+        double d1 = dfa + dfb - 3 * (fa  - fb)/(a-b);
+        double k = d1*d1 - dfa*dfb;
+        double d2 = s * Math.sqrt(k);
+        double x= b - d * ((dfb + d2 - d1)/(dfb - dfa + 2*d2));
+        if(Math.abs(a-x) < c*d*s) {
+            if(DEVEL) log.printf(DEBUG, "Halving Interval: a=%g x=%g b=%g", a, x, b);
+            x = a + 2*c*d;
+        }
+        if(Math.abs(b-x) < c*d*s) {
+            if(DEVEL) log.printf(DEBUG, "Halving Interval: a=%g x=%g b=%g", a, x, b);
+            x = b + 2*c*d;
+        }
+        if(DEVEL) assertTrue(x <= Math.max(a, b) && x >= Math.min(a, b));
+        return x;
+    }
+
+    final static double choose(double alpha1, double phi, double dphi,
+                               double alphaMax){
+            // TODO: make it smart
+        return Math.min(2*alpha1, alphaMax);
+    }
+
+    final void lineSearchStep(double alpha)  {
+        add(1.0, X0, alpha, dX, X0);
+        add(1/dt, X0, -1/dt, X1, V0);
+        updateStressForceEnergy();
+        calculatePhiGradient();
+        dphi = dot(dX, G);
     }
 
     void scanLineToFile(double alphaMax, int n, String filename) {
@@ -330,44 +469,52 @@ public class SoftBody {
             }
             path = path.resolve(filename);
             BufferedWriter writer = Files.newBufferedWriter(path);
-            writer.write(String.format("#alpha phi dphi\n"));
-            lineSearchStep(-alphaMax);
-            double step = alphaMax/(double)n;
-            double phi1 = phi0;
-            for(int j=-n; j<n; j++) {
+            writer.write(String.format("#alpha phi dphi1 dphi2\n"));
+            double phiInitial = phi;
+            double step = alphaMax/(double)n/2.0;
+            double phi1 = phi;
+            double phiMin = Double.MAX_VALUE;
+            double alphaMin = 0;
+            double a = 0;
+            double s = 1;
+            int N=n;
+            for(int l=0; l<3; l++) {
+                phi1 = phi;
+                lineSearchStep(s*step);
+                a += s*step;
                 writer.write(String.format("%g %12.12f %12.12f %12.12f\n",
-                                        j*step, phi0, dphi0, (phi0 - phi1)/step));
-                phi1 = phi0;
-                lineSearchStep(alphaMax/(double)n);
+                            a, phi, dphi, s*(phi - phi1)/step));
+                if(l == 1) N=2*n;
+                if(l == 2) N=n;
+
+                for(int j=0; j<N; j++) {
+                    if(phi < phiMin) {
+                        phiMin = phi;
+                        alphaMin = a;
+                    }
+                    phi1 = phi;
+                    lineSearchStep(2*s*step);
+                    a += 2*s*step;
+                    writer.write(String.format("%g %12.12f %12.12f %12.12f\n",
+                                 a, phi, dphi, s*(phi - phi1)/2/step));
+                }
+                s=-s;
             }
-            lineSearchStep(-alphaMax);
+            lineSearchStep(-step);
+            if(DEVEL) log.printf(DEBUG, "Line Scan min value: alphaMin=%4.4f, phiMin=%g\n", alphaMin, phiMin);
             writer.close();
+            assertEquals(String.format("Line scan not reversed: AlphaMax=%g, n=%d\n", alphaMax, n),
+                         phiInitial, phi, 1e-6);
         } catch(IOException e) {
             throw new RuntimeException("Could not write data");
         }
     }
 
-    double strongWolfeLineSearch(double alpha1, double alphaMax) {
-        // double c = 1e-3;
-        double alpha0 = 0;
-        // int i = 0;
-        scanLineToFile(4*alpha1, 100, String.format("scanline_%04.4f_%02d.dat", t, i));
-        lineSearchStep(alpha1);
-        return 0.0;
-    }
-    void lineSearchStep(double alpha)  {
-        add(1.0, X0, alpha, dX, X0);
-        add(1/dt, X0, -1/dt, X1, V0);
-        updateStressForceEnergy();
-        calculatePhiGradient();
-        dphi0 = dot(dX, G);
-    }
     void calculateHessian() {
         add(1, D1, 1/dt, D2, temp2);
         add(1/dt/dt, M, temp2, H);
         // addIdentity(H, H, 1);
     }
-    void explicitEulerStep() { }
 
     void implicitEulerStep() {
         // iterator move values, use D2 for lagged damping
@@ -381,7 +528,6 @@ public class SoftBody {
         mult(M, V0, temp1);
         energy = eInt + 0.5 * dot(temp1, V0);
 
-
         for(Cell c: cells) {
             cellStatusCallback.accept(c);
             cellForceCallback.accept(c);
@@ -392,7 +538,7 @@ public class SoftBody {
         // constants
         double tau = 1e-2;
         double dE = 0;
-        double dEOld = 1e20;
+        double dEOld = Double.MAX_VALUE;
 
         // move all the values which are fixed during iteration to XHat
         add(2, X1, -1, X2, XHat);
@@ -401,37 +547,43 @@ public class SoftBody {
         add(1, XHat, dt*dt, temp1, XHat);
         // set initial value for X
         X0.set(XHat);
-        System.out.format("Iteration start: t=%f\n", t);
+        if(DEVEL) log.printf(DEBUG, "Iteration start: t=%f\n\n", t);
         i = 0;
-        while(i <= 10) {
-
-            dE = dot(G, G);
-            dE = stableNewtonStep(X0, XHat, V0, G, H);
-
+        while(i <= 40) {
+            dE = stableNewtonStep();
             if(dE <= tau) {
-                System.out.format("dE = %8.12f , phi0=%8.12f.\nStop iteration\n", dE, phi0);
-                break;
-            } else if (dE >= dEOld) {
-                System.err.format("Energy minimization did not converge! dE=%g, dE'=%g\n",
-                                  dE, dEOld);
-                // assert(false);
-                break;
+                if(DEVEL) log.printf(DEBUG, "dE = %8.12f , phi=%8.12f.\nStop iteration\n", dE, phi);
+                return;
+            }
+            if(DEVEL) {
+                if (dE >= dEOld * 1e2) {
+                    assertTrue(
+                        String.format("Energy minimization did not converge! dE=%g, dE'=%g\n",
+                                      dE, dEOld), false);
+
+                    // assert(false);
+                    break;
+                }
             }
 
             dEOld = dE;
             // add(1/dt, X0, -1/dt, X1, V0);
             i++;
         }
+        if(DEVEL) assertTrue(
+            String.format("Energy minimization did not converge! dE=%g, dE'=%g\n",
+                          dE, dEOld),
+            false
+        );
     }
     void calculatePhiGradient() {
-        phi0 = +eInt;
+        phi = +eInt;
         add(1, X0, -1, XHat, G);
         mult(1/dt/dt, M, G, temp1);
         // temp1 <-- M(x-xHat)/dt^2
-        phi0 += dot(G, temp1)/2.0; // phi += (x-xHat)M(x-xHat)/(2dt^2)
+        phi += dot(G, temp1)/2.0; // phi += (x-xHat)M(x-xHat)/(2dt^2)
         mult(D2, V0, fDamp);
-        phi0 += dot(V0, fDamp)*dt/2.0; // phi +=  v kD v dt/2
-        // phi0 *= -1;
+        phi += dot(V0, fDamp)*dt/2.0; // phi +=  v kD v dt/2
         add(-1, fInt, 1, fDamp, f);
         // mult(-dt*dt, MI, f, temp1);
         add(temp1, f, G);
@@ -454,9 +606,9 @@ public class SoftBody {
         y = cellHeight * (cells.length - 1);
         for(int row = 0; row<cells.length; row++) {
             x = 0;
-            // System.out.println("y" + y);
+            // if(DEVEL) log.debug("y" + y);
             for(int col = 0; col<cells[row].length; col++) {
-                // System.out.println("x" + x);
+                // if(DEVEL) log.debug("x" + x);
                 lower = null;
             right = null;
                 if(row+1 < cells.length)

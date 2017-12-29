@@ -26,7 +26,9 @@ dependencies {
     compile "org.lwjgl:lwjgl-opengl:${lwjglVersion}:${natives}"
     compile "org.ejml:ejml-dsparse:0.32"
     compile "org.ejml:ejml-simple:0.32"
-    testCompile "junit:junit:4.12"
+    compile "junit:junit:4.12"
+    compile "org.apache.logging.log4j:log4j-core:2.10.0"
+    compile "org.apache.logging.log4j:log4j-api:2.10.0"
 }
 
 
@@ -55,15 +57,16 @@ jar {
 
 test {
     filter {
-        /*includeTestsMatching "physics.CellGridTests.fourOnFourStretching"*/
-        /*includeTestsMatching "physics.CellGridTests.fourOnFourStretching"*/
+        /* includeTestsMatching "physics.CellGridTests.fourOnFourStretching" */
         /*includeTestsMatching "physics.CellGridTests.slurp"*/
-        /*includeTestsMatching "physics.TwoCellTests.beamOscillationRotation"*/
-        includeTestsMatching "physics.TwoCellTests.dampedSymmetricRotationOscillation"
+        /* includeTestsMatching "physics.TwoCellTests.beamOscillationRotation" */
+        /* includeTestsMatching "physics.TwoCellTests.dampedSymmetricRotationOscillation" */
         /*includeTestsMatching "physics.TwoCellTests.dampedAbsoluteRotation"*/
         /* includeTestsMatching "physics.TwoCellTests.symmetricRotationOscillation" */
         /* includeTestsMatching "physics.TwoCellTests.*" */
-        /* includeTestsMatching "physics.TwoCellTests.testotesto" */
+        includeTestsMatching "physics.TwoCellTests.testotesto"
+        includeTestsMatching "physics.TwoCellTests.externalForce"
         /* includeTestsMatching "physics.CellGridTests.*" */
+        /* includeTestsMatching "*" */
     }
 }

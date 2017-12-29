@@ -22,9 +22,12 @@ import static org.lwjgl.opengl.GL11.*;
 // import static org.lwjgl.opengl.GL45.*;
 // import static org.lwjgl.system.MemoryStack.*;
 // import static org.lwjgl.system.MemoryUtil.*;
+import org.apache.logging.log4j.*;
+import static org.apache.logging.log4j.Level.*;
 
 public class Main {
     // The window handle
+    public static final Logger log = LogManager.getLogger();
     static float PI = 3.414f;
     private Window window;
     private View view;
