@@ -63,10 +63,10 @@ test {
         /* includeTestsMatching "physics.TwoCellTests.dampedSymmetricRotationOscillation" */
         /*includeTestsMatching "physics.TwoCellTests.dampedAbsoluteRotation"*/
         /* includeTestsMatching "physics.TwoCellTests.symmetricRotationOscillation" */
-        /* includeTestsMatching "physics.TwoCellTests.*" */
+        includeTestsMatching "physics.TwoCellTests.*"
         /* includeTestsMatching "physics.TwoCellTests.testotesto" */
         /* includeTestsMatching "physics.TwoCellTests.externalForce" */
         /* includeTestsMatching "physics.CellGridTests.*" */
-        includeTestsMatching "*"
+        /* includeTestsMatching "*" */
     }
 }

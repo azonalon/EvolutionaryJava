@@ -25,6 +25,7 @@ public class SoftBody {
     private static final Logger log = LogManager.getLogger();
     private static double testNu=0;
     private static double testD =0;
+    private static int testCounter =0;
     // private static double averageNewtonIteration =0;
     // private static double averageLineSearchIteration =0;
     public DMatrixRMaj X0; // newly calculated state
@@ -51,8 +52,6 @@ public class SoftBody {
     public Consumer<Cell> cellForceCallback  = (Cell c)->{};
     public static Consumer<SoftBody> bodyStatusCallback = (SoftBody b)->{};
     public static Consumer<Bond> bondStatusCallback = (Bond b)->{};
-
-
 
     public SoftBody(Cell[] cells, Bond[] bonds) {
         initializeState(cells, bonds);
@@ -186,41 +185,6 @@ public class SoftBody {
             M.set(j, i, x0 + x);
     }
 
-
-    // final void updateEnergyForce() {
-    //     fInt.zero();
-    //     eInt = 0;
-    //     for(Bond bond: bonds) {
-    //         int a = bond.a.index;
-    //         int b = bond.b.index;
-    //         double dx  = X1.get(b + 0, 0) - X1.get(a + 0, 0);
-    //         double dy  = X1.get(b + 1, 0) - X1.get(a + 1, 0);
-    //         double th1 = X1.get(a + 2, 0);
-    //         double th2 = X1.get(b + 2, 0);
-    //         double d = Math.sqrt(dx*dx + dy*dy);
-    //         double l=bond.l, E=bond.E, k=bond.k;//, c=bond.c, D=bond.D;
-    //
-    //         double sx = dx /d/d;
-    //         double sy = dy /d/d;
-    //
-    //         double nu = circleMod(Math.atan2(dy, dx) - bond.angle) - 0 * PI/2;
-    //         if(bond.nu0 * nu < -PI) {
-    //             if(bond.nu0 > nu) {
-    //                 bond.rotationCounter++;
-    //             } else {
-    //                 bond.rotationCounter--;
-    //             }
-    //         }
-    //         bond.nu0 = nu;
-    //         nu += bond.rotationCounter * 2 * PI;
-    //         testNu = nu;
-    //         double fS = 3.0*E * (th1 + th2 - 2 * nu);
-    //
-    //         addEnergy(k, E, d, l, th1, th2, nu);
-    //         addForce(k, E, d, l, th1, th2, nu, sx, sy, fS, a, b);
-    //     }
-    // }
-
     final void updateStressForceEnergy() {
         D1.zero();
         fInt.zero();
@@ -240,12 +204,13 @@ public class SoftBody {
             double ey = dy / d;
             double sx = ex / d;
             double sy = ey / d;
-            double nu = circleMod(Math.atan2(dy, dx) - bond.angle) - 0 * PI/2;
-            if(bond.nu0 * nu < -PI) {
-                if(bond.nu0 > nu) {
-                    bond.rotationCounter++;
-                } else {
+            // double nu = circleMod(Math.atan2(dy, dx) - bond.angle) - 0 * PI/2;
+            double nu = Math.atan2(dy, dx);
+            if(bond.nu0 * nu < 0) {
+                if(nu > 0 && bond.nu0 < nu - PI) {
                     bond.rotationCounter--;
+                } else if(nu < 0 && bond.nu0 > nu + PI) {
+                    bond.rotationCounter++;
                 }
             }
             bond.nu0 = nu;
@@ -254,7 +219,7 @@ public class SoftBody {
             if(DEVEL) testD =   d;
             double fS = 3.0*E * (th1 + th2 - 2 * nu);
             // System.out.println(d);
-            assert d>0.05: "Cell distance too small: d="  + d;
+            // assert d>0.01: "Cell distance too small: d="  + d;
             addEnergy(k, E, d, l, th1, th2, nu);
             addForce(k, E, d, l, th1, th2, nu, sx, sy, fS, a, b);
             addStress(k, E, d, l,sx, sy, fS, a, b);
@@ -345,7 +310,7 @@ public class SoftBody {
         double dphi1 = dphi;
         double c1  = 1e-2;
         double c2  = 1e-2;
-        scanLineToFile(10, 100, String.format("scanline_%04.4f_%02d.dat", t, i));
+        scanLineToFile(2*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, i));
         int j = 1;
         // lineSearchStep(alpha);
         if(DEVEL) log.debug("Line search start.");
@@ -440,23 +405,23 @@ public class SoftBody {
 
     final static double interpolate(double a, double fa, double dfa,
                              double b, double fb, double dfb) {
-        double c = 1e-1;
+        double c = 5e-2;
         double d = b - a;
         double s = Math.signum(d);
         double d1 = dfa + dfb - 3 * (fa  - fb)/(a-b);
         double k = d1*d1 - dfa*dfb;
         double d2 = s * Math.sqrt(k);
         double x= b - d * ((dfb + d2 - d1)/(dfb - dfa + 2*d2));
-        // if(Math.abs(a-x) < c*d*s) {
-        //     if(DEVEL) log.printf(DEBUG, "Halving Interval: a=%g x=%g b=%g", a, x, b);
-        //     x = a + 2*c*d;
-        // }
-        // if(Math.abs(b-x) < c*d*s) {
-        //     if(DEVEL) log.printf(DEBUG, "Halving Interval: a=%g x=%g b=%g", a, x, b);
-        //     x = b + 2*c*d;
-        // }
-        // if(DEVEL) assertTrue("Interpolated alpha is not in interval.",
-        //                      x <= Math.max(a, b) && x >= Math.min(a, b));
+        if(Math.abs(a-x) < c*d*s) {
+            if(DEVEL) log.printf(DEBUG, "Halving Interval: a=%g x=%g b=%g", a, x, b);
+            x = a + 2*c*d;
+        }
+        if(Math.abs(b-x) < c*d*s) {
+            if(DEVEL) log.printf(DEBUG, "Halving Interval: a=%g x=%g b=%g", a, x, b);
+            x = b + 2*c*d;
+        }
+        if(DEVEL) assertTrue("Interpolated alpha is not in interval.",
+                             x <= Math.max(a, b) && x >= Math.min(a, b));
         return x;
     }
 
@@ -487,19 +452,22 @@ public class SoftBody {
             double phi1 = phi;
             double dphi1 = dphi;
             double phiMin = phi;
-            double dphiMin = phi;
+            double dphiMin = dphi;
             double alphaMin = 0;
+            int rotationCounter = testCounter;
+            double oldNu = testNu;
             double a = 0;
             double s = 1;
             double k = 1;
             double maxStep = 0.1;
             double minStep = 1e-5;
             phi1 = phi;
-            double step = 5*alphaMax/n;
+            double step = alphaMax/n;
             lineSearchStep(s*step);
             a += s*step;
             double maxDPhiDiff = Math.abs(dphi1 - dphi);
             for(int l=0; l<3; l++) {
+                // while(s*a < alphaMax * (l == 2 ? 0:1)) {
                 while(Math.abs(a) < alphaMax * (l == 2 ? 0:1)) {
                     if(phi < phiMin) {
                         phiMin = phi;
@@ -510,8 +478,8 @@ public class SoftBody {
                     dphi1 = dphi;
                     lineSearchStep(s*step);
                     a += s*step;
-                    writer.write(String.format("%g %12.12f %12.12f %12.12f %12.12f %12.12f\n",
-                                 a, phi, dphi, s*(phi - phi1)/step, testNu, testD));
+                    writer.write(String.format("%g %12.12f %12.12f %12.12f %12.12f %12.12f %d\n",
+                                 a, phi, dphi, s*(phi - phi1)/step, testNu, testD, testCounter));
                     if(Math.abs(dphi1 - dphi) < maxDPhiDiff) {
                         if(step < maxStep) {
                             step /= k;
@@ -530,9 +498,15 @@ public class SoftBody {
                 s=-s;
             }
             lineSearchStep(-a);
+            // lineSearchStep(-alphaMax);
+            // lineSearchStep(alphaMax);
             if(DEVEL) log.printf(DEBUG, "Line Scan min value: alphaMin=%4.4f, phiMin=%g, dphiMin=%g\n", alphaMin, phiMin, dphiMin);
             writer.close();
-            assertEquals(String.format("Line scan not reversed: AlphaMax=%g, n=%d, t=%g, i=%d\n", alphaMax, n, t, i),
+            assertEquals(String.format("Line scan not reversed:\n" +
+                                       "    AlphaMax=%g, n=%d, t=%g, i=%d, alast=%g\n" +
+                                       "    OldCounter=%d, newCounter=%d, oldNu=%g, newNu=%g\n",
+                                       alphaMax, n, t, i, a, rotationCounter, testCounter,
+                                       oldNu, testNu),
                          phiInitial, phi, 1e-6);
         } catch(IOException e) {
             throw new RuntimeException("Could not write data");
@@ -605,6 +579,7 @@ public class SoftBody {
             false
         );
     }
+
     void calculatePhiGradient() {
         phi = +eInt;
         add(1, X0, -1, XHat, G);
@@ -669,8 +644,6 @@ public class SoftBody {
             bondList.toArray(new Bond[bondList.size()])
         );
     }
-
-
 
     public double totalEnergy() {
         return energy;

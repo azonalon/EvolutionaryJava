@@ -3,6 +3,7 @@ import physics.*;
 import org.junit.Test;
 import org.junit.Rule;
 import java.io.*;
+import java.util.*;
 import org.junit.rules.*;
 import static util.PrettyPrint.printGrid;
 import java.nio.file.*;
@@ -24,7 +25,7 @@ public class TwoCellTests
     static Consumer<SoftBody> stepFunction;
     static Consumer<SoftBody> implicit = (bod) -> bod.implicitEulerStep();
     int nSteps = 200;
-    double dt = 2;
+    double dt = .1;
     static int stepCounter=0;
     int i=0, j=0;
 
@@ -99,17 +100,18 @@ public class TwoCellTests
             dt, nSteps
         );
     }
+
     @Test
     public void externalForce(){
         double
         m1= 1.0, I1= 0.1, zeta1= 1.0, k1=  1.0, r1= 0.5, E1= 0.1,
-        x1=-4.5, y1= 0.0, vx1=   0.0, vy1=-0.0, L1=+0.0,
+        x1=-0.5, y1= 0.0, vx1=   1.0, vy1=-0.1, L1=+0.0,
         m2= 1.0, I2= 0.1, zeta2= 1.0, k2=  1.0, r2= 0.5, E2= 0.1,
-        x2= 4.5, y2= 0.0, vx2=   0.0, vy2= 0.0, L2=+0.0,
+        x2= 0.5, y2= 0.0, vx2=   -1.0, vy2= 0.1, L2=+0.0,
         dt= 0.01;
         forceB = (cell, t) -> {
-            cell.fY = 0.5*Math.cos(2*Math.PI * t * 1e-1/dt);
-            cell.fX = 0;
+            cell.fY = 1*Math.cos(2*Math.PI * t * 1e-1/dt);
+            cell.fX = 1;
             // System.out.format("t=%g\n", t);
             // System.out.format("d=%g\n", bonds[0]);
         };
@@ -124,10 +126,42 @@ public class TwoCellTests
     }
 
     @Test
+    public void random(){
+        for(int l=0; l<2; l++) {
+            System.out.format("Random state vector: seed=%d\n", l);
+            i=0;
+            Random rand = new Random(l);
+            double
+            m1= 1.0, I1= 0.1, zeta1= 1.0, k1=  1.0, r1= rand.nextDouble(), E1= 0.1,
+            x1=rand.nextDouble(), y1= rand.nextDouble(), vx1=   rand.nextDouble(), vy1=rand.nextDouble(), L1=rand.nextDouble(),
+            m2= 1.0, I2= 0.1, zeta2= 1.0, k2=  1.0, r2= rand.nextDouble(), E2= 0.1,
+            x2= rand.nextDouble(), y2= rand.nextDouble(), vx2=   rand.nextDouble(), vy2= rand.nextDouble(), L2=+0.0;
+            forceB = (cell, t) -> {
+                cell.fY = rand.nextDouble()*Math.cos(2*Math.PI * t * 1e-1/dt);
+                // System.out.format("t=%g\n", t);
+                // System.out.format("d=%g\n", bonds[0]);
+            };
+            forceA = (cell, t) -> {
+                cell.fY = rand.nextDouble()*Math.cos(2*Math.PI * t * 1e-1/dt);
+                // System.out.format("t=%g\n", t);
+                // System.out.format("d=%g\n", bonds[0]);
+            };
+            // forceB = (cell) -> {cell.fY += 4;};
+            twoCellTestCase(
+                m1, I1, zeta1, k1, r1, E1,
+                x1, y1, vx1, vy1, L1,
+                m2, I2, zeta2, k2, r2, E2,
+                x2, y2, vx2, vy2, L2,
+                dt, nSteps
+            );
+        }
+    }
+
+    @Test
     public void dampedAbsoluteRotation (){
         double
         m1= 1.0, I1= 1.0, zeta1= 1.0, k1=  1.0, r1= 0.5, E1= 1.0,
-        x1=-0.5, y1= 0.0, vx1=   0.0, vy1= 0.0, L1=+1.0,
+        x1=-0.5, y1= 0.0, vx1  = 0.0, vy1= 0.0, L1=+1.0,
         m2= 1.0, I2= 1.0, zeta2= 1.0, k2=  1.0, r2= 0.5, E2= 1.0,
         x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 0.0, L2=+1.0,
         dt= 0.01;
