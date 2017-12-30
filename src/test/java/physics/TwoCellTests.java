@@ -24,8 +24,8 @@ public class TwoCellTests
     BiConsumer<Cell, Double> forceB = (c, t)->{};
     static Consumer<SoftBody> stepFunction;
     static Consumer<SoftBody> implicit = (bod) -> bod.implicitEulerStep();
-    int nSteps = 200;
-    double dt = .1;
+    int nSteps = 1000;
+    double dt = 2;
     static int stepCounter=0;
     int i=0, j=0;
 

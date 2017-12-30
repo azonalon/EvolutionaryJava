@@ -22,7 +22,7 @@ public class CellGridTests
     static Consumer<SoftBody> implicit = (bod) -> bod.implicitEulerStep();
     // static double[] energies;
     static int stepCounter=0;
-    static int nSteps = 10;
+    static int nSteps = 800;
     static double dt = 0.1;
     Cell[][] grid;
     SoftBody body=null;

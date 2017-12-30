@@ -204,8 +204,8 @@ public class SoftBody {
             double ey = dy / d;
             double sx = ex / d;
             double sy = ey / d;
-            // double nu = circleMod(Math.atan2(dy, dx) - bond.angle) - 0 * PI/2;
-            double nu = Math.atan2(dy, dx);
+            double nu = circleMod(Math.atan2(dy, dx) - bond.angle) - 0 * PI/2;
+            // double nu = Math.atan2(dy, dx);
             if(bond.nu0 * nu < 0) {
                 if(nu > 0 && bond.nu0 < nu - PI) {
                     bond.rotationCounter--;
@@ -224,16 +224,6 @@ public class SoftBody {
             addForce(k, E, d, l, th1, th2, nu, sx, sy, fS, a, b);
             addStress(k, E, d, l,sx, sy, fS, a, b);
         }
-        // if(t >= t0 && t <= t0 + dt && s < 5) {
-            // if(DEVEL) log.debug("Bond");
-            // if(DEVEL) log.debug(bonds[0].toString());
-            // if(DEVEL) log.debug("X1");
-            // if(DEVEL) log.debug(X1.toString());
-            // if(DEVEL) log.debug("v");
-            // if(DEVEL) log.debug(v.toString());
-            // if(DEVEL) log.debug("Hessian");
-            // if(DEVEL) log.debug(D1.toString());
-        // }
     }
 
     final DMatrixRMaj updateExternalForce() {
@@ -261,9 +251,10 @@ public class SoftBody {
     }
 
     final double stableNewtonStep() {
-        double k = 1e-1;
+        double k = 1e-2;
         double alpha = 1;
         double alphaMax  = 1e3;
+        double l = 1e3;
 
         // compute the step
         add(1/dt, X0, -1/dt, X1, V0);
@@ -292,7 +283,12 @@ public class SoftBody {
             if(DEVEL) log.printf(DEBUG, "Gradient is suitable! dXdE=%g, dX dE=%g\n", dXdE, dx*dE);
             scale(-1, G, dX);
             dphi = -dE;
+            dx = dE;
             // dX.set(G);
+        }
+        if(dx > l) {
+            scale(l/dx, dX, dX);
+            dx = l;
         }
         strongWolfeLineSearch(alpha, alphaMax);
         dE = dot(G, G);
@@ -310,7 +306,7 @@ public class SoftBody {
         double dphi1 = dphi;
         double c1  = 1e-2;
         double c2  = 1e-2;
-        scanLineToFile(2*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, i));
+        // scanLineToFile(2*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, i));
         int j = 1;
         // lineSearchStep(alpha);
         if(DEVEL) log.debug("Line search start.");
@@ -507,7 +503,7 @@ public class SoftBody {
                                        "    OldCounter=%d, newCounter=%d, oldNu=%g, newNu=%g\n",
                                        alphaMax, n, t, i, a, rotationCounter, testCounter,
                                        oldNu, testNu),
-                         phiInitial, phi, 1e-6);
+                         phiInitial/phi, 1, 1e-6);
         } catch(IOException e) {
             throw new RuntimeException("Could not write data");
         }
@@ -528,7 +524,6 @@ public class SoftBody {
         // initial status update
         mult(DC, D1, D2);
         add(1/dt, X1, -1/dt, X2, V0);
-        mult(M, V0, temp1);
 
 
 
@@ -550,6 +545,7 @@ public class SoftBody {
             dE = stableNewtonStep();
             if(dE <= tau) {
                 if(DEVEL) log.printf(DEBUG, "dE = %8.12f , phi=%8.12f.\nStop iteration\n", dE, phi);
+                mult(M, V0, temp1);
                 energy = eInt + 0.5 * dot(temp1, V0);
                 for(Cell c: cells) {
                     cellStatusCallback.accept(c);
