@@ -19,12 +19,12 @@ public class TwoCellTests
     // static double[] energies;
     Cell[] cells = null;
     Bond[] bonds = null;
-    static BiConsumer<Cell, Double> forceA = (c, t)->{};
-    static BiConsumer<Cell, Double> forceB = (c, t)->{};
+    BiConsumer<Cell, Double> forceA = (c, t)->{};
+    BiConsumer<Cell, Double> forceB = (c, t)->{};
     static Consumer<SoftBody> stepFunction;
     static Consumer<SoftBody> implicit = (bod) -> bod.implicitEulerStep();
     int nSteps = 200;
-    double dt = 0.5;
+    double dt = 2;
     static int stepCounter=0;
     int i=0, j=0;
 
@@ -103,14 +103,15 @@ public class TwoCellTests
     public void externalForce(){
         double
         m1= 1.0, I1= 0.1, zeta1= 1.0, k1=  1.0, r1= 0.5, E1= 0.1,
-        x1=-0.5, y1= 0.0, vx1=   0.0, vy1=-1.0, L1=+0.0,
+        x1=-4.5, y1= 0.0, vx1=   0.0, vy1=-0.0, L1=+0.0,
         m2= 1.0, I2= 0.1, zeta2= 1.0, k2=  1.0, r2= 0.5, E2= 0.1,
-        x2= 0.5, y2= 0.0, vx2=   0.0, vy2= 1.0, L2=+0.0,
+        x2= 4.5, y2= 0.0, vx2=   0.0, vy2= 0.0, L2=+0.0,
         dt= 0.01;
-        forceA = (cell, t) -> {cell.fX = 1*Math.sin(2*Math.PI * t * 1e-1/dt);};
         forceB = (cell, t) -> {
-            cell.fY = 1*Math.sin(2*Math.PI * t * 1e-1/dt);
-            System.out.format("t=%g\n", t);
+            cell.fY = 0.5*Math.cos(2*Math.PI * t * 1e-1/dt);
+            cell.fX = 0;
+            // System.out.format("t=%g\n", t);
+            // System.out.format("d=%g\n", bonds[0]);
         };
         // forceB = (cell) -> {cell.fY += 4;};
         twoCellTestCase(
@@ -273,7 +274,8 @@ public class TwoCellTests
         );
     }
 
-    static void testSimulation(Cell[] cells, Bond[] bonds, int nSteps) {
+    void testSimulation(Cell[] cells, Bond[] bonds, int nSteps
+                                ) {
         SoftBody bod = new SoftBody(cells, bonds);
         bod.cellForceCallback = (cell) -> {
             if(cell == cells[0])

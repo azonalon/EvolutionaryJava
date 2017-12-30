@@ -1,11 +1,12 @@
-package tests;
+package scripts;
+import java.util.*;
 public class Test
 {
     public static void main (String[] args) {
-        System.out.println(Math.atan2(1, 0));
-        System.out.println(Math.atan2(0, 1));
-        System.out.println(Math.atan2(-1, 0));
-        System.out.println(Math.atan2(0, -1));
+        Random r = new Random(42);
+        for(int i=0; i<10; i++) {
+            System.out.println(r.nextDouble() + "" +  r.nextDouble());
+        }
     }
 
 }

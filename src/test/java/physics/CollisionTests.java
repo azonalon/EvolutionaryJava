@@ -5,7 +5,6 @@ import org.junit.Test;
 import org.junit.Rule;
 import java.nio.file.*;
 import java.io.*;
-import java.util.stream.*;
 import org.junit.rules.*;
 import static util.PrettyPrint.printGrid;
 import java.nio.file.*;
@@ -16,13 +15,13 @@ import static util.Math.*;
 import static physics.CellCulture.*;
 import java.util.function.*;
 
-public class CellGridTests
+public class CollisionTests
 {
     static Consumer<SoftBody> stepFunction;
     static Consumer<SoftBody> implicit = (bod) -> bod.implicitEulerStep();
     // static double[] energies;
     static int stepCounter=0;
-    static int nSteps = 10;
+    static int nSteps = 300;
     static double dt = 0.1;
     Cell[][] grid;
     SoftBody body=null;
@@ -158,59 +157,6 @@ public class CellGridTests
     }
 
     @Test
-    public void disarrayed() {
-        CellCulture[][] layout = new CellCulture[][] {
-            {NORMAL, NORMAL, NORMAL, NORMAL, NORMAL},
-            {NORMAL, NORMAL, NORMAL, NORMAL, NORMAL},
-            {NORMAL, NORMAL, NORMAL, NORMAL, NORMAL},
-            {NORMAL, NORMAL, NORMAL, NORMAL, NORMAL},
-            {NORMAL, NORMAL, NORMAL, NORMAL, NORMAL},
-        };
-        grid = CellCulture.growArray(layout);
-        double cellWidth = 1;
-        double cellHeight = 1;
-        body = new SoftBody(grid, cellWidth, cellHeight);
-        Random rand = new Random(42);
-        body.cellForceCallback = (cell) -> {
-            for(Cell[] row: grid) {
-                for(Cell c: row) {
-                    c.setPosition(
-                        rand.nextDouble() * 2 - 1,
-                        rand.nextDouble() * 2 - 1
-                    );
-                }
-            }
-        };
-        executeCellGridTestCase(dt, nSteps);
-    }
-
-    @Test
-    public void stiffSlurp() {
-        CellCulture[][] layout = new CellCulture[][] {
-            {STIFF, STIFF, STIFF, STIFF, STIFF},
-            {STIFF, STIFF, STIFF, STIFF, STIFF},
-            {STIFF, STIFF, STIFF, STIFF, STIFF},
-            {STIFF, STIFF, STIFF, STIFF, STIFF},
-            {STIFF, STIFF, STIFF, STIFF, STIFF},
-        };
-        grid = CellCulture.growArray(layout);
-        double cellWidth = 1;
-        double cellHeight = 1;
-        body = new SoftBody(grid, cellWidth, cellHeight);
-        body.cellForceCallback = (cell) -> {
-            if(cell == grid[0][0]) {
-                    cell.fX += 1*Math.sin(0.01 * 2*Math.PI/0.07*t);
-                }
-            if(cell == grid[4][0]) {
-                    cell.fX += 1*Math.sin(0.01 * 2*Math.PI/0.07*t);
-                }
-            // if(cell == grid[4][0])
-            //     cell.fX += 2*Math.sin(0.01 * 2*Math.PI/0.07*t);
-        };
-        executeCellGridTestCase(dt, nSteps);
-    }
-
-    @Test
     public void fourOnFourEquilibrium() {
         CellCulture[][] layout = new CellCulture[][] {
             {NORMAL, NORMAL},
@@ -256,8 +202,8 @@ public class CellGridTests
              j++;
         };
         SoftBody.bodyStatusCallback = (bod) -> {
-            simulationResults[i][nCellParams * nCells + 0] = t;
-            simulationResults[i][nCellParams * nCells + 1] = bod.totalEnergy();
+             simulationResults[i][nCellParams * nCells + 0] = t;
+             simulationResults[i][nCellParams * nCells + 1] = bod.totalEnergy();
             i++;
             t += dt;
         };

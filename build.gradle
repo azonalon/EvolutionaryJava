@@ -64,9 +64,9 @@ test {
         /*includeTestsMatching "physics.TwoCellTests.dampedAbsoluteRotation"*/
         /* includeTestsMatching "physics.TwoCellTests.symmetricRotationOscillation" */
         /* includeTestsMatching "physics.TwoCellTests.*" */
-        includeTestsMatching "physics.TwoCellTests.testotesto"
-        includeTestsMatching "physics.TwoCellTests.externalForce"
+        /* includeTestsMatching "physics.TwoCellTests.testotesto" */
+        /* includeTestsMatching "physics.TwoCellTests.externalForce" */
         /* includeTestsMatching "physics.CellGridTests.*" */
-        /* includeTestsMatching "*" */
+        includeTestsMatching "*"
     }
 }

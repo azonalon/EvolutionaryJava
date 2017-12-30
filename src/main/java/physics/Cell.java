@@ -69,7 +69,7 @@ public class Cell {
 
     public void setPosition(double x, double y) {
         body.X0.set(this.index + 0, x);
-        body.X0.set(this.index + 1, x);
+        body.X0.set(this.index + 1, y);
     }
     public void setVelocity(double vx, double vy) {
         body.X1.set(this.index + 0, body.X0.get(this.index + 0) - dt*vx);
