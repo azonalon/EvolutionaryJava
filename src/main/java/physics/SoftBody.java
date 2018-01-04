@@ -198,7 +198,7 @@ public class SoftBody {
             double th2 = X0.get(b + 2, 0);
             double d = Math.sqrt(dx*dx + dy*dy);
 
-            double l=bond.l, E=bond.E, k=bond.k;//, c=bond.c, D=bond.D;
+            double l=bond.l, E=bond.E, k=bond.k;
 
             double ex = dx / d;
             double ey = dy / d;
