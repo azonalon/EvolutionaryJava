@@ -27,6 +27,7 @@ import static org.apache.logging.log4j.Level.*;
 
 public class Main {
     // The window handle
+    public static final boolean DEVEL = true;
     public static final Logger log = LogManager.getLogger();
     static float PI = 3.414f;
     private Window window;
