@@ -61,6 +61,11 @@ public class ElasticModel extends ImplicitODESolver {
         temp2x2A = new DMatrix2x2();
         temp2x2B = new DMatrix2x2();
         precompute(vertices, k, nu);
+        for(int i=0; i<vertices.length; i++) {
+            x0.set(i, vertices[i]);
+            x1.set(i, vertices[i]);
+            x2.set(i, vertices[i]);
+        }
     }
 
     static final void set(DMatrix2x2 x, double a11, double a12, double a21, double a22) {
@@ -77,7 +82,8 @@ public class ElasticModel extends ImplicitODESolver {
                   vertices[i + 0] - vertices[k + 0], vertices[j + 0] - vertices[k + 0],
                   vertices[i + 1] - vertices[k + 1], vertices[j + 1] - vertices[k + 1]
             );
-            W[l] = Math.abs(det(temp2x2A)/2.0);
+            W[l] = Math.abs(det(temp2x2A)/1.0);
+            W[l] = det(temp2x2A)/2.0;
             Bm[l] = new DMatrix2x2();
             if(DEVEL) invert(temp2x2A, Bm[l]);
             assertCountable(Bm[l]);
@@ -95,7 +101,7 @@ public class ElasticModel extends ImplicitODESolver {
                   x.get(i + 1, 0) - x.get(k + 1, 0), x.get(j + 1, 0) - x.get(k + 1, 0)
             );
             mult(temp2x2A, Bm[l], temp2x2B);
-            stressEnergy += venantPiolaStress(temp2x2B, lambda[l], mu[l], temp2x2A);
+            stressEnergy += W[l]*venantPiolaStress(temp2x2B, lambda[l], mu[l], temp2x2A);
             multTransB(temp2x2A, Bm[l], temp2x2B);
             addForceMatrixToVector(temp2x2B, dest, i, j, k, l);
         }
@@ -164,6 +170,7 @@ public class ElasticModel extends ImplicitODESolver {
     }
     final void computeForceDifferential(DMatrixRMaj x, DMatrixRMaj dx,
                                                DMatrixRMaj dest) {
+        computeElasticForceDifferential(x, dx, dest);
     }
 
     /**

@@ -3,6 +3,7 @@ import physics.*;
 
 import java.nio.file.*;
 import java.io.*;
+import java.util.function.*;
 
 import static util.Math.*;
 import static org.junit.Assert.*;
@@ -16,40 +17,98 @@ import static org.apache.logging.log4j.Level.*;
 import static main.Main.DEVEL;
 
 abstract class ImplicitODESolver {
+    abstract double computeForce(DMatrixRMaj x, DMatrixRMaj dest);
+    abstract void computeForceDifferential(DMatrixRMaj x, DMatrixRMaj dx, DMatrixRMaj dest);
+    abstract void timeStepFinished();
+    public double dampPotential;
 
-    final void computeNewtonDirection(DMatrixRMaj x, DMatrixRMaj dn) {
-        phi = computeOptimizeGradient(x, g);
-        scale(-1, g, dn);
-        computeDPhi(g, dn);
+    DMatrixRMaj dn, g, x0, x1, x2, v, xHat,
+                temp1, temp2, M, MI, fExt,
+                xAlpha, gConst, r, p, x;
+    double dG, dPhi, dX, phi, dN;
+    double kDamp;
+    static double dt, t;
+    int iNewton=0;
+    double newtonAccuracy = 1e-5;
+
+    private static final Logger log = LogManager.getLogger();
+
+    final void conjugateGradientSolve(DMatrixRMaj rhs, DMatrixRMaj initialGuess,
+                                      BiConsumer<DMatrixRMaj,DMatrixRMaj>
+                                        computeLhs,
+                                      DMatrixRMaj result) {
+        computeLhs.accept(initialGuess, temp1); // temp1=Ax0
+        add(1, rhs, -1, temp1, r); // temp2 = p0 = r0 = b - Ax0
+        p.set(r);
+        double rr1, rr2, alpha, beta;
+        computeLhs.accept(p, temp1); // temp1 = Ap
+        rr1 = dot(r,r);
+        alpha=rr1/dot(p, temp1);
+        add(1, initialGuess, alpha, p, result); // result = x1 = x0 + alpha p0
+
+        if(DEVEL) log.debug("Conjugate Gradient Start.");
+        for(int k=0; k<rhs.getNumRows(); k++) {
+            // if(alpha < 0) {
+            //     if(DEVEL) log.debug("Indefiniteness detected.");
+            //     if(DEVEL) log.debug("Conjugate gradient stop.");
+            //     break;
+            // }
+            add(1, r, -alpha, temp1, r);
+            rr2 = dot(r, r);
+            if(DEVEL) log.printf(DEBUG, "Conjugate Gradient: k=%d, ||r||=%g", k, rr2);
+            if(rr2 < 1e-5 ) {
+                if(DEVEL) log.debug("Conjugate gradient stop.");
+                break;
+            }
+            beta = rr2/rr1;
+            rr1 = rr2;
+            add(1,r,beta, p, p);
+            computeLhs.accept(p, temp1);
+            alpha = rr1/dot(p, temp1);
+            add(1, result, alpha, p, result);
+        }
+    }
+
+    final void computeNewtonDirection(DMatrixRMaj g, DMatrixRMaj dn) {
+        conjugateGradientSolve(g, g, (dx, lhs)->{
+            computeForceDifferential(x, dx, lhs);
+            computeForceDifferential(x1, dx, temp2);
+            add(-kDamp/dt, temp2, 1, lhs, lhs);
+            elementMult(M, dx, temp2);
+            add(1/dt/dt, temp2, 1, lhs, lhs);
+        }, dn);
+        scale(-1, dn, dn);
     };
+
     final void computeDPhi(DMatrixRMaj g, DMatrixRMaj dn) {
-        dPhi = dot(g, dn)/normP2(dn);
+        dPhi = dot(g, dn);
     }
 
     final double computeOptimizeGradient(DMatrixRMaj x, DMatrixRMaj dest) {
         double energy = computeForce(x, dest);
+
         add(1, x, -1, xHat, temp1);
         elementMult(M, temp1, temp2);
-        // energy += dot(temp1, temp2)/2/dt/dt;
-        // add(1/dt/dt, temp2, -1, dest, dest);
-        scale(-1, dest, g);
+        energy += dot(temp1, temp2)/2/dt/dt;
+        add(1/dt/dt, temp2, -1, dest, dest);
+
+        add(1/dt, x, -1/dt, x1, v);
+        computeForceDifferential(x1, v, temp2);
+        dampPotential = -dot(v, temp2)*kDamp/2*dt;
+        energy += dampPotential;
+        // if(DEVEL) log.printf(DEBUG, "Compute Gradient: damping dampPotential=%g", dampPotential);
+        add(-kDamp, temp2, 1, dest, dest);
         return energy;
     }
 
 
-    abstract double computeForce(DMatrixRMaj x, DMatrixRMaj dest);
-    abstract void computeForceDifferential(DMatrixRMaj x, DMatrixRMaj dx, DMatrixRMaj dest);
-    abstract void timeStepFinished();
-
-    DMatrixRMaj dn, g, x0, x1, x2, xHat, temp1, temp2, M, MI, fExt, xAlpha, gConst;
-    double dG, dPhi, dX, phi, dN;
-    static double dt, t;
-    int iNewton=0;
-
-    private static final Logger log = LogManager.getLogger();
     ImplicitODESolver(int n) {
         dn = new DMatrixRMaj(n, 1);
         g = new DMatrixRMaj(n, 1);
+        r = new DMatrixRMaj(n, 1);
+        p = new DMatrixRMaj(n, 1);
+        x = new DMatrixRMaj(n, 1);
+        v = new DMatrixRMaj(n, 1);
         x0 = new DMatrixRMaj(n, 1);
         x1 = new DMatrixRMaj(n, 1);
         x2 = new DMatrixRMaj(n, 1);
@@ -68,22 +127,29 @@ abstract class ImplicitODESolver {
         double alphaMax  = 1e3;
         double l = 1e3;
 
-        computeNewtonDirection(x0, dn);
+        phi = computeOptimizeGradient(x0, g);
+        dG = dot(g, g);
+        if(dG < newtonAccuracy) {
+            return dG;
+        }
+        computeNewtonDirection(g, dn);
 
-        dN = Math.sqrt(dot(dn, dn));
-        dG = Math.sqrt(dot(g, g));
-        if(dPhi < -k*dN*dG) {
+        dN = dot(dn, dn);
+        computeDPhi(g, dn);
+
+        double dPhiSq = dPhi*Math.abs(dPhi);
+        if(dPhiSq < -k*dN*dG) {
             // dN is suitable
             // if(DEVEL) log.printf(DEBUg, "dn is suitable! dNdG=%g, dn dg=%g\n", dNdG, dN*dg);
         }
-        else if(dPhi > k*dN*dG) {
+        else if(dPhiSq > k*dN*dG) {
             // -dN is suitable
-            if(DEVEL) log.printf(DEBUG, "-dn is suitable! dNdG=%g, dn dg=%g\n", dPhi, dN*dG);
-            dPhi = - dPhi;
+            if(DEVEL) log.printf(DEBUG, "-dn is suitable! dPhi*abs(dPhi)=%g, dN*dG=%g\n", dPhiSq, dN*dG);
+            dPhi = -dPhi;
             scale(-1, dn, dn);
         }
         else {
-            if(DEVEL) log.printf(DEBUG, "gradient is suitable! dNdG=%g, dn dg=%g\n", dPhi, dN*dG);
+            if(DEVEL) log.printf(DEBUG, "gradient is suitable! dNdG=%g, dN*dG=%g\n", dPhi*dPhi, dN*dG);
             scale(-1, g, dn);
             dPhi = -dG;
             dN = dG;
@@ -110,7 +176,7 @@ abstract class ImplicitODESolver {
         double dPhi1 = dPhi;
         double c1  = 1e-2;
         double c2  = 1e-2;
-        scanLineToFile(8*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, iNewton));
+        // scanLineToFile(8*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, iNewton));
         int j = 1;
         // lineSearchStep(alpha);
         if(DEVEL) log.debug("Line search start.");
@@ -125,7 +191,7 @@ abstract class ImplicitODESolver {
                 alpha1 = zoom(alpha0, phi0, dPhi0, alpha1, phi1, dPhi1,
                               phiS, dPhiS, c1, c2,
                               alpha0, phi0, dPhi0, alpha1, phi1, dPhi1);
-                if(DEVEL) log.printf(DEBUG, "Zoom returned with alpha=%g\n", alpha1);
+                if(DEVEL) log.printf(DEBUG, "Zoom returned with alpha=%g, phi=%g, dphi=%g\n", alpha1, phi, dPhi);
                 return alpha1;
             }
             if(Math.abs(dPhi1) <= -c2*dPhiS) {
@@ -139,7 +205,7 @@ abstract class ImplicitODESolver {
                 alpha1 = zoom(alpha1, phi1, dPhi1, alpha0, phi0, dPhi0,
                               phiS, dPhiS, c1, c2,
                               alpha0, phi0, dPhi0, alpha1, phi1, dPhi1);
-                if(DEVEL) log.printf(DEBUG, "Zoom returned with alpha=%g\n", alpha1);
+                if(DEVEL) log.printf(DEBUG, "Zoom returned with alpha=%g, phi=%g, dphi=%g\n", alpha1, phi, dPhi);
                 return alpha1;
             }
             if(DEVEL) log.printf(DEBUG, "Case phi is small and dPhi is big and negative:\n    dPhiS=%g, dPhi=%g\n", dPhiS, dPhi);
@@ -269,7 +335,7 @@ abstract class ImplicitODESolver {
             computePhiDPhi(0);
             if(DEVEL) log.printf(DEBUG, "Line Scan min value: alphaMin=%4.4f,"+
                                  " phiMin=%g, dPhiMin=%g\n", alphaMin, phiMin, dPhiMin);
-            log.debug("Origin and direction" + x0 + dn);
+            // log.debug("Origin and direction" + x0 + dn);
             writer.close();
         } catch(IOException e) {
             throw new RuntimeException("Could not write data");
@@ -281,26 +347,30 @@ abstract class ImplicitODESolver {
         x2.set(x1);
         x1.set(x0);
         add(2, x1, -1, x2, x0);
-        // elementMult(fExt, MI, temp1);
-        // add(dt*dt, temp1, x0, x0);
+        elementMult(fExt, MI, temp1);
+        add(dt*dt, temp1, x0, x0);
+        add(1/dt, x1, -1/dt, x2, temp1);
+        if(DEVEL) log.printf(DEBUG, "\n||v||=%g", normP2(temp1));
+
     }
 
     void implicitEulerStep() {
-        double tau = 1e-2;
         double dG = 1e33;
         double phiOld = Double.MAX_VALUE;
 
+        if(DEVEL) log.printf(DEBUG, "\nNewton iteration start. t=%g", t, dG);
         // step forward and set the initial guess
         computeForwardEulerStep(x2, x1, x0, fExt);
         xHat.set(x0);
 
-        if(DEVEL) log.printf(DEBUG, "Newton iteration start. t=%g", t);
         iNewton=0;
-        while(iNewton <= 40) {
-            if(dG <= tau) {
+        while(iNewton <= 5) {
+            dG = newtonStep();
+            if(dG < newtonAccuracy) {
+                if(DEVEL) log.printf(DEBUG, "Newton iteration stopped: i=%d, t=%g, dG=%g",
+                 iNewton ,t, dG);
                 return;
             }
-            dG = newtonStep();
             if(DEVEL) {
                 if (phi >= phiOld) {
                     assertTrue(
@@ -314,7 +384,7 @@ abstract class ImplicitODESolver {
             }
             phiOld = phi;
             iNewton++;
-            if(DEVEL) log.printf(DEBUG, "Newton iteration i=%d, t=%g", iNewton ,t);
+            if(DEVEL) log.printf(DEBUG, "\nNewton iteration i=%d, t=%g, dG=%g", iNewton ,t, dG);
         }
         if(DEVEL) assertTrue(
             String.format("Energy minimization did not stop after 40 iterations!" +
