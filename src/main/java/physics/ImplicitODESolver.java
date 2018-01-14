@@ -364,7 +364,7 @@ abstract class ImplicitODESolver {
         xHat.set(x0);
 
         iNewton=0;
-        while(iNewton <= 5) {
+        while(iNewton <= 2000) {
             dG = newtonStep();
             if(dG < newtonAccuracy) {
                 if(DEVEL) log.printf(DEBUG, "Newton iteration stopped: i=%d, t=%g, dG=%g",

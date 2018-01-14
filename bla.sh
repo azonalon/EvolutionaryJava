@@ -16,6 +16,6 @@ gnuplot -e "\
 set key off; \
 set parametric;\
 plot for[i=2:122:2] \
-'build/test-results/physics/ElasticModelTests/${1}1.dat'\
+'build/test-results/physics/ElasticModelTests/${1}.dat'\
  u (column(i)):(column(i+1)); \
  pause -1"

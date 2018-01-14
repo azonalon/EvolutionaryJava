@@ -10,7 +10,7 @@ import static main.Main.DEVEL;
 public class ElasticModel extends ImplicitODESolver {
     // matrices for triangles
     DMatrix2x2[] Bm; // reference triangle matrices
-    DMatrix2x2 temp2x2A, temp2x2B, temp2x2P, H, P, F, dF, dP;
+    DMatrix2x2 temp2x2A, temp2x2B, temp2x2P, temp2x2D, H, P, F, dF, dP;
     final static DMatrix2x2 nId = new DMatrix2x2(-1,0,0,-1);
     final static DMatrix2x2 id = new DMatrix2x2(1,0,0,1);
     int[][] Te; // nx3 indices for each triangle into point vector
@@ -21,6 +21,29 @@ public class ElasticModel extends ImplicitODESolver {
 
     void timeStepFinished() {
 
+    }
+
+    public static final boolean invertTranspose( DMatrix2x2 a , DMatrix2x2 inv ) {
+        double scale = 1.0/elementMaxAbs(a);
+
+        double a11 = a.a11*scale;
+        double a12 = a.a12*scale;
+        double a21 = a.a21*scale;
+        double a22 = a.a22*scale;
+
+        double m11 = a22;
+        double m12 = -( a21);
+        double m21 = -( a12);
+        double m22 = a11;
+
+        double det = (a11*m11 + a12*m12)/scale;
+
+        inv.a11 = m11/det;
+        inv.a21 = m21/det;
+        inv.a12 = m12/det;
+        inv.a22 = m22/det;
+
+        return !Double.isNaN(det) && !Double.isInfinite(det);
     }
 
     /**
@@ -60,6 +83,7 @@ public class ElasticModel extends ImplicitODESolver {
         temp2x2P = new DMatrix2x2();
         temp2x2A = new DMatrix2x2();
         temp2x2B = new DMatrix2x2();
+        temp2x2D = new DMatrix2x2();
         precompute(vertices, k, nu);
         for(int i=0; i<vertices.length; i++) {
             x0.set(i, vertices[i]);
@@ -82,8 +106,7 @@ public class ElasticModel extends ImplicitODESolver {
                   vertices[i + 0] - vertices[k + 0], vertices[j + 0] - vertices[k + 0],
                   vertices[i + 1] - vertices[k + 1], vertices[j + 1] - vertices[k + 1]
             );
-            W[l] = Math.abs(det(temp2x2A)/1.0);
-            W[l] = det(temp2x2A)/2.0;
+            W[l] = Math.abs(det(temp2x2A)/2.0);
             Bm[l] = new DMatrix2x2();
             if(DEVEL) invert(temp2x2A, Bm[l]);
             assertCountable(Bm[l]);
@@ -139,6 +162,36 @@ public class ElasticModel extends ImplicitODESolver {
         add(mu, temp2x2P, k, id, temp2x2P);
         mult(F, temp2x2P, dest);
         return psi;
+    }
+
+    final double neoHookeanStress(DMatrix2x2 F,
+                                 double lambda, double mu,
+                                 DMatrix2x2 dest) {
+        multTransA(F, F, temp2x2P);
+        double I1 = det(temp2x2P);
+        double J = det(F);
+        assert J > 0: "Negative jacobian not supported for neo hookean!";
+        double logJ = Math.log(J);
+        invertTranspose(F, temp2x2P);
+        add(mu, F, -mu+lambda*logJ, temp2x2P, dest);
+        return mu*(I1/2.0 - 1 - logJ) + lambda/2.0*logJ*logJ;
+    }
+
+    final void neoHookeanStressDifferential(DMatrix2x2 F,DMatrix2x2 dF,
+                                 double lambda, double mu,
+                                 DMatrix2x2 dest) {
+        multTransA(F, F, temp2x2P);
+        double J = det(F);
+        assert J > 0: "Negative jacobian not supported for neo hookean!";
+        double logJ = Math.log(J);
+
+        invertTranspose(F, temp2x2P);
+        multTransB(temp2x2P, dF, temp2x2D);
+        double trIFdF = trace(temp2x2D);
+        multAdd(temp2x2D, temp2x2P, dest);
+        add(mu, dF, mu - lambda*logJ, dest, dest);
+        add(lambda*trIFdF, temp2x2P, 1, dest, dest);
+        add(mu, F, -mu+lambda*logJ, temp2x2P, dest);
     }
 
     final void venantPiolaStressDifferential(DMatrix2x2 F, DMatrix2x2 dF,

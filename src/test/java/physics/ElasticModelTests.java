@@ -206,7 +206,7 @@ public class ElasticModelTests {
             if(Files.notExists(fDir)) {
                 Files.createDirectories(fDir);
             }
-            BufferedWriter w = Files.newBufferedWriter(fDir.resolve("backwardEulerTest1.dat"));
+            BufferedWriter w = Files.newBufferedWriter(fDir.resolve("backwardEulerTest.dat"));
             for(int j=0; t<10; j++) {
                 w.write(String.format("% 8.4f", t));
                 for(int i=0; i<vertices.length; i++) {
@@ -248,7 +248,7 @@ public class ElasticModelTests {
             if(Files.notExists(fDir)) {
                 Files.createDirectories(fDir);
             }
-            BufferedWriter w = Files.newBufferedWriter(fDir.resolve("backwardEulerTestTwoTriangle1.dat"));
+            BufferedWriter w = Files.newBufferedWriter(fDir.resolve("backwardEulerTestTwoTriangle.dat"));
             for(int j=0; t<10; j++) {
                 w.write(String.format("% 8.4f", t));
                 for(int i=0; i<vertices.length; i++) {
@@ -297,30 +297,26 @@ public class ElasticModelTests {
             ls.close();
         }
         s.close();
-        // for(int i=0; i<vertices.size(); i++) {
-        //     for(int j=0; j< 2; j++) {
-        //         System.out.print(vertices.get(i)[j] + " ");
-        //     }
-        //     System.out.println();
-        // }
-        // for(int i=0; i<indices.size(); i++) {
-        //     for(int j=0; j< 3; j++) {
-        //         System.out.print(indices.get(i)[j] + " ");
-        //     }
-        //     System.out.println();
-        // }
+    }
+
+    void saveIndices(Path path, Vector<int[]> indices) throws IOException {
+        BufferedWriter w = Files.newBufferedWriter(path);
+        for(int[] face: indices) {
+            w.write(String.format("% 4d % 4d % 4d\n", face[0], face[1], face[2]));
+        }
+        w.close();
     }
 
     @Test
-    public void backwardEulerTestMultiTriangle() {
+    public void ball() {
         try {
             Vector<double[]> vertices = new Vector<double[]>();
             Vector<int[]> indices = new Vector<int[]>();
             readObj(Paths.get("src/test/resources/physics/ball.obj"),
             vertices, indices);
 
-            double nuV = 0.33;
-            double kV =  1.0;
+            double nuV = 0.45;
+            double kV =  200;
             double[] k = new double[indices.size()] ;
             double[] nu = new double[indices.size()] ;
             double[] M = new double[vertices.size()*2] ;
@@ -334,21 +330,28 @@ public class ElasticModelTests {
             em.x2.set(em.x1);
 
             double dt=0.05, t=0;
-            em.kDamp = 0.0;
+            em.kDamp = 0.1;
             ImplicitODESolver.dt = dt;
             if(Files.notExists(fDir)) {
                 Files.createDirectories(fDir);
             }
+            saveIndices(fDir.resolve("ball.indices"), indices);
             BufferedWriter w = Files.newBufferedWriter(
-                fDir.resolve("backwardEulerTestMultiTriangle1.dat")
+                fDir.resolve("ball.dat")
             );
-            for(int j=0; t<8.5; j++) {
+            for(int j=0; t<50; j++) {
                 w.write(String.format("% 8.4f", t));
                 for(int i=0; i<em.x0.numRows; i++) {
                     w.write(String.format(" % 8.4f ", em.x0.get(i)));
-                    em.fExt.set(0, 0, 1*Math.cos(Math.PI*t));
                 }
-                w.write(String.format("% 8.4f", em.dampPotential));
+                for(int i=0; i<em.x0.numRows; i++) {
+                    if(i%2 == 1) {
+                        em.fExt.set(i, 0, -0.2);
+                        if(em.x0.get(i) < -2) {
+                            em.fExt.set(i, 0, 10);
+                        }
+                    }
+                }
                 w.write("\n");
                 // em.fExt.set(5, 0, -1);
                 // em.fExt.set(3, 0, 1);
@@ -388,7 +391,7 @@ public class ElasticModelTests {
             if(Files.notExists(fDir)) {
                 Files.createDirectories(fDir);
             }
-            BufferedWriter w = Files.newBufferedWriter(fDir.resolve("simpleForwardEuler1.dat"));
+            BufferedWriter w = Files.newBufferedWriter(fDir.resolve("simpleForwardEuler.dat"));
             for(int j=0; t<100; j++) {
                 w.write(String.format("% 8.4f", t));
                 for(int i=0; i<vertices.length; i++) {
