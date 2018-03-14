@@ -12,7 +12,7 @@ app = QtGui.QApplication([])
 w = gl.GLViewWidget()
 w.show()
 w.setWindowTitle('pyqtgraph example: GLMeshItem')
-w.setCameraPosition(azimuth=270, elevation=90)
+w.setCameraPosition(azimuth=270, elevation=90, pos=(100,100,200))
 
 g = gl.GLGridItem()
 g.scale(2,2,1)

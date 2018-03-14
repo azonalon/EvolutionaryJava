@@ -11,6 +11,7 @@ import java.nio.file.*;
 import static org.junit.Assert.*;
 import static org.ejml.dense.row.CommonOps_DDRM.*;
 import static org.ejml.dense.row.NormOps_DDRM.*;
+import static org.ejml.dense.fixed.CommonOps_DDF2.*;
 import static org.ejml.dense.fixed.NormOps_DDF2.*;
 import static org.ejml.EjmlUnitTests.*;
 import static org.ejml.ops.MatrixIO.*;
@@ -108,8 +109,9 @@ public class ElasticModelTests {
     @Test
     public void elasticForces() {
         double[] vertices1 = new double[] {0, 0, 0, 1, 1, 0};
-        double[] vertices2 = new double[] {0, -1, 2, 2, 1, -1};
-        double[][] vertices3 = new double[][] {{1}, {0}, {0}, {1}, {1}, {1}};
+        // double[] vertices2 = new double[] {0, -1, 2, 2, 1, -1};
+        double[] vertices2 = new double[] {0, 0.7, 0, 1, 1, 0};
+        double[][] vertices3 = new double[][] {{-.05}, {.1}, {-.2}, {.3}, {.4}, {.5}};
         double[] k = new double[] {1.0};
         double[] nu = new double[] {0.33};
         int[][] indices = new int[][] {{0,1,2}};
@@ -119,38 +121,40 @@ public class ElasticModelTests {
             em.x0.set(i, vertices2[i]);
             em.x1.set(i, vertices1[i]);
         }
+        DMatrixRMaj dx = new DMatrixRMaj(vertices3);
+        double psi;
+
+        ElasticModel.model = ElasticModel.VENANTKIRCHHOFF;
 
         em.computeElasticForces(em.x1, em.g);
         assertEquals(em.g.toString(), 0, normP2(em.g), 0);
 
-        double psi = em.computeElasticForces(em.x0, em.g);
-        DMatrixRMaj f = new DMatrixRMaj(new double[][] {
-             {24.414}, {28.9253}, {-18.5316}, {-26.6696}, {-5.88235}, {-2.25564}
-        });
-        assertEquals(em.g, f, 1e-3);
-        assertEquals(psi, 27.4215, 1e-4);
+        psi = em.computeElasticForces(em.x0, em.g);
+        DMatrixRMaj f = new DMatrixRMaj(new double[][]
+        {{-0.0239938}, {-0.0693498}, {0.0394737}, {0.0466718}, {-0.0154799}, {0.022678}}
+        );
+        assertEquals(em.g, f, 1e-4);
+        assertEquals(psi, 0.0623878, 1e-4);
 
-
-        DMatrixRMaj dx = new DMatrixRMaj(vertices3);
         em.computeElasticForceDifferential(em.x0, dx, em.g);
-        f = new DMatrixRMaj(new double[][] {
-            {-3.69306}, {21.4728}, {5.1747}, {-14.0867}, {-1.48165}, {-7.38611}
-        });
+        f = new DMatrixRMaj(new double[][]
+        {{0.148153}, {-0.125785}, {0.0125663}, {0.0110128}, {-0.16072}, {0.114772}}
+        );
         assertEquals(em.g, f, 1e-4);
 
+        ElasticModel.model = ElasticModel.NEOHOOKEAN;
+
         psi = em.computeElasticForces(em.x0, em.g);
-        f = new DMatrixRMaj(new double[][] {
-             {24.414}, {28.9253}, {-18.5316}, {-26.6696}, {-5.88235}, {-2.25564}
-        });
-        assertEquals(em.g, f, 1e-3);
-        assertEquals(psi, 27.4215, 1e-4);
+        f = new DMatrixRMaj(new double[][]
+            {{-1.90296}, {-2.16612}, {1.46365}, {2.03454}, {0.439309}, {0.131579}}
+        );
+        assertEquals(em.g, f, 1e-4);
+        assertEquals(psi, 0.451295, 1e-4);
 
-
-        dx = new DMatrixRMaj(vertices3);
         em.computeElasticForceDifferential(em.x0, dx, em.g);
-        f = new DMatrixRMaj(new double[][] {
-            {-3.69306}, {21.4728}, {5.1747}, {-14.0867}, {-1.48165}, {-7.38611}
-        });
+        f = new DMatrixRMaj(new double[][]
+            {{3.0101}, {1.39375}, {-2.58304}, {-1.6322}, {-0.427058}, {0.238451}}
+        );
         assertEquals(em.g, f, 1e-4);
     }
 
@@ -183,6 +187,11 @@ public class ElasticModelTests {
             }
         }
         return f;
+    }
+    @Test
+    public void determinant() {
+        DMatrix2x2 m = new DMatrix2x2(1, 0, 0, 1);
+        assertEquals(det(m), 1.0, 1e-10);
     }
 
     @Test
@@ -297,6 +306,18 @@ public class ElasticModelTests {
             ls.close();
         }
         s.close();
+        // for(int i=0; i<vertices.size(); i++) {
+        //     for(int j=0; j< 2; j++) {
+        //         System.out.print(vertices.get(i)[j] + " ");
+        //     }
+        //     System.out.println();
+        // }
+        // for(int i=0; i<indices.size(); i++) {
+        //     for(int j=0; j< 3; j++) {
+        //         System.out.print(indices.get(i)[j] + " ");
+        //     }
+        //     System.out.println();
+        // }
     }
 
     void saveIndices(Path path, Vector<int[]> indices) throws IOException {
@@ -315,7 +336,7 @@ public class ElasticModelTests {
             readObj(Paths.get("src/test/resources/physics/ball.obj"),
             vertices, indices);
 
-            double nuV = 0.45;
+            double nuV = 0.33;
             double kV =  200;
             double[] k = new double[indices.size()] ;
             double[] nu = new double[indices.size()] ;
@@ -347,7 +368,7 @@ public class ElasticModelTests {
                 for(int i=0; i<em.x0.numRows; i++) {
                     if(i%2 == 1) {
                         em.fExt.set(i, 0, -0.2);
-                        if(em.x0.get(i) < -2) {
+                        if(em.x0.get(i) < -5) {
                             em.fExt.set(i, 0, 10);
                         }
                     }

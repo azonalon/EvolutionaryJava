@@ -24,7 +24,7 @@ abstract class ImplicitODESolver {
 
     DMatrixRMaj dn, g, x0, x1, x2, v, xHat,
                 temp1, temp2, M, MI, fExt,
-                xAlpha, gConst, r, p, x;
+                xAlpha, gConst, r, p;
     double dG, dPhi, dX, phi, dN;
     double kDamp;
     static double dt, t;
@@ -71,7 +71,9 @@ abstract class ImplicitODESolver {
 
     final void computeNewtonDirection(DMatrixRMaj g, DMatrixRMaj dn) {
         conjugateGradientSolve(g, g, (dx, lhs)->{
-            computeForceDifferential(x, dx, lhs);
+            assert(normP2(x0) > 0);
+            assert(normP2(x1) > 0);
+            computeForceDifferential(x0, dx, lhs);
             computeForceDifferential(x1, dx, temp2);
             add(-kDamp/dt, temp2, 1, lhs, lhs);
             elementMult(M, dx, temp2);
@@ -107,7 +109,6 @@ abstract class ImplicitODESolver {
         g = new DMatrixRMaj(n, 1);
         r = new DMatrixRMaj(n, 1);
         p = new DMatrixRMaj(n, 1);
-        x = new DMatrixRMaj(n, 1);
         v = new DMatrixRMaj(n, 1);
         x0 = new DMatrixRMaj(n, 1);
         x1 = new DMatrixRMaj(n, 1);
@@ -176,7 +177,7 @@ abstract class ImplicitODESolver {
         double dPhi1 = dPhi;
         double c1  = 1e-2;
         double c2  = 1e-2;
-        // scanLineToFile(8*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, iNewton));
+        // scanLineToFile(2*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, iNewton));
         int j = 1;
         // lineSearchStep(alpha);
         if(DEVEL) log.debug("Line search start.");
@@ -364,7 +365,7 @@ abstract class ImplicitODESolver {
         xHat.set(x0);
 
         iNewton=0;
-        while(iNewton <= 2000) {
+        while(iNewton <= 20) {
             dG = newtonStep();
             if(dG < newtonAccuracy) {
                 if(DEVEL) log.printf(DEBUG, "Newton iteration stopped: i=%d, t=%g, dG=%g",

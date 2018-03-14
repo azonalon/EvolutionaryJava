@@ -13,6 +13,9 @@ public class ElasticModel extends ImplicitODESolver {
     DMatrix2x2 temp2x2A, temp2x2B, temp2x2P, temp2x2D, H, P, F, dF, dP;
     final static DMatrix2x2 nId = new DMatrix2x2(-1,0,0,-1);
     final static DMatrix2x2 id = new DMatrix2x2(1,0,0,1);
+    static final int NEOHOOKEAN = 0;
+    static final int VENANTKIRCHHOFF = 1;
+    static int model = NEOHOOKEAN;
     int[][] Te; // nx3 indices for each triangle into point vector
     double[] W; // reference triangle volumes
     double[] mu; // first lame coefficient for each triangle
@@ -108,7 +111,7 @@ public class ElasticModel extends ImplicitODESolver {
             );
             W[l] = Math.abs(det(temp2x2A)/2.0);
             Bm[l] = new DMatrix2x2();
-            if(DEVEL) invert(temp2x2A, Bm[l]);
+            invert(temp2x2A, Bm[l]);
             assertCountable(Bm[l]);
             lambda[l] = K[l]*nu[l]/(1+nu[l])/(1-2*nu[l]);
             mu[l] = K[l]/2/(1+nu[l]);
@@ -124,7 +127,10 @@ public class ElasticModel extends ImplicitODESolver {
                   x.get(i + 1, 0) - x.get(k + 1, 0), x.get(j + 1, 0) - x.get(k + 1, 0)
             );
             mult(temp2x2A, Bm[l], temp2x2B);
-            stressEnergy += W[l]*venantPiolaStress(temp2x2B, lambda[l], mu[l], temp2x2A);
+            if(model == NEOHOOKEAN)
+                stressEnergy += W[l]*neoHookeanStress(temp2x2B, lambda[l], mu[l], temp2x2A);
+            else
+                stressEnergy += W[l]*venantPiolaStress(temp2x2B, lambda[l], mu[l], temp2x2A);
             multTransB(temp2x2A, Bm[l], temp2x2B);
             addForceMatrixToVector(temp2x2B, dest, i, j, k, l);
         }
@@ -164,13 +170,18 @@ public class ElasticModel extends ImplicitODESolver {
         return psi;
     }
 
+    static String str(DMatrix2x2 m) {
+        return String.format("((%g, %g), (%g, %g))", m.a11, m.a12, m.a21, m.a22);
+    }
+
     final double neoHookeanStress(DMatrix2x2 F,
                                  double lambda, double mu,
                                  DMatrix2x2 dest) {
         multTransA(F, F, temp2x2P);
-        double I1 = det(temp2x2P);
-        double J = det(F);
-        assert J > 0: "Negative jacobian not supported for neo hookean!";
+        double I1 = trace(temp2x2P);
+        // double J = det(F);
+        double J = Math.abs(det(F));
+        assert J > 0: String.format("Negative jacobian not supported for neo hookean! J=%g", J);
         double logJ = Math.log(J);
         invertTranspose(F, temp2x2P);
         add(mu, F, -mu+lambda*logJ, temp2x2P, dest);
@@ -180,18 +191,17 @@ public class ElasticModel extends ImplicitODESolver {
     final void neoHookeanStressDifferential(DMatrix2x2 F,DMatrix2x2 dF,
                                  double lambda, double mu,
                                  DMatrix2x2 dest) {
-        multTransA(F, F, temp2x2P);
-        double J = det(F);
-        assert J > 0: "Negative jacobian not supported for neo hookean!";
+        // double J = det(F);
+        double J = Math.abs(det(F));
+        assert J > 0: String.format("Negative jacobian not supported for neo hookean! J=%g\n" + str(F), J);
         double logJ = Math.log(J);
 
         invertTranspose(F, temp2x2P);
         multTransB(temp2x2P, dF, temp2x2D);
         double trIFdF = trace(temp2x2D);
-        multAdd(temp2x2D, temp2x2P, dest);
+        mult(temp2x2D, temp2x2P, dest);
         add(mu, dF, mu - lambda*logJ, dest, dest);
         add(lambda*trIFdF, temp2x2P, 1, dest, dest);
-        add(mu, F, -mu+lambda*logJ, temp2x2P, dest);
     }
 
     final void venantPiolaStressDifferential(DMatrix2x2 F, DMatrix2x2 dF,
@@ -250,7 +260,10 @@ public class ElasticModel extends ImplicitODESolver {
             );
             mult(temp2x2A, Bm[l], F);
             mult(temp2x2B, Bm[l], dF);
-            venantPiolaStressDifferential(F, dF, lambda[l], mu[l], dP);
+            if(model == NEOHOOKEAN)
+                neoHookeanStressDifferential(F, dF, lambda[l], mu[l], dP);
+            else
+                venantPiolaStressDifferential(F, dF, lambda[l], mu[l], dP);
             multTransB(dP, Bm[l], temp2x2B);
             addForceMatrixToVector(temp2x2B, dest, i, j, k, l);
         }

@@ -989,7 +989,7 @@ Cell[BoxData[
    3.724685142791582*^9}}]
 }, Open  ]]
 },
-WindowSize->{880, 1058},
+WindowSize->{956, 1058},
 WindowMargins->{{2, Automatic}, {2, 20}},
 FrontEndVersion->"11.0 for Linux x86 (64-bit) (July 28, 2016)",
 StyleDefinitions->"Default.nb"
@@ -1012,11 +1012,11 @@ Cell[2530, 66, 12821, 238, 373, "Output"]
 }, Open  ]],
 Cell[CellGroupData[{
 Cell[15388, 309, 94, 1, 30, "Input"],
-Cell[15485, 312, 7718, 216, 354, "Output"]
+Cell[15485, 312, 7718, 216, 334, "Output"]
 }, Open  ]],
 Cell[CellGroupData[{
 Cell[23240, 533, 94, 1, 30, "Input"],
-Cell[23337, 536, 7248, 209, 354, "Output"]
+Cell[23337, 536, 7248, 209, 334, "Output"]
 }, Open  ]],
 Cell[CellGroupData[{
 Cell[30622, 750, 216, 3, 30, "Input"],
