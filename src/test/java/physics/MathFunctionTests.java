@@ -9,9 +9,18 @@ import static java.lang.Math.PI;
 import static physics.Cell.dt;
 import static physics.Cell.t;
 import static util.Math.*;
+import org.ejml.data.*;
 
-public class TestMathFunctions {
+public class MathFunctionTests {
     double delta = 1e-4;
+
+    @Test
+    public void testSVD() {
+        double[] t = new double [] {0.934893,0.35493,0.231022,-0.0177897,-0.511286,-0.859411};
+        DMatrix2x2 m = new DMatrix2x2(-0.115855,0.182388,-0.0276305,0.0789723);
+        double[] r = singularValueDecomposition(m);
+        assertArrayEquals(t, r, 0.0001);
+    }
 
     // @Test
     // public void testInterpolate() {

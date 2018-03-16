@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      9302,        309]
-NotebookOptionsPosition[      8844,        288]
-NotebookOutlinePosition[      9177,        303]
-CellTagsIndexPosition[      9134,        300]
+NotebookDataLength[      5533,        176]
+NotebookOptionsPosition[      5188,        159]
+NotebookOutlinePosition[      5521,        174]
+CellTagsIndexPosition[      5478,        171]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -154,139 +154,10 @@ Cell[BoxData[
   ], "Input",
  CellChangeTimes->{{3.728500303092448*^9, 3.7285004021657267`*^9}, {
   3.7285455041120577`*^9, 3.72854552202439*^9}, {3.728545691406357*^9, 
-  3.728545746671741*^9}, {3.728545812221484*^9, 3.728545842714699*^9}}],
-
-Cell[CellGroupData[{
-
-Cell[BoxData["svdexpr"], "Input",
- CellChangeTimes->{{3.72854715504877*^9, 3.728547156066453*^9}}],
-
-Cell[BoxData[
- RowBox[{"{", 
-  RowBox[{
-   FractionBox["1", 
-    SqrtBox[
-     RowBox[{"1", "+", 
-      FractionBox[
-       SuperscriptBox[
-        RowBox[{"(", 
-         RowBox[{
-          RowBox[{"g", " ", 
-           RowBox[{"(", 
-            RowBox[{"e", "+", "Q"}], ")"}]}], "+", 
-          RowBox[{"h", " ", 
-           RowBox[{"(", 
-            RowBox[{"f", "+", "R"}], ")"}]}]}], ")"}], "2"], 
-       SuperscriptBox[
-        RowBox[{"(", 
-         RowBox[{
-          RowBox[{"g", " ", "h"}], "-", 
-          RowBox[{
-           RowBox[{"(", 
-            RowBox[{"e", "+", "Q"}], ")"}], " ", 
-           RowBox[{"(", 
-            RowBox[{"f", "+", "R"}], ")"}]}]}], ")"}], "2"]]}]]], ",", 
-   FractionBox[
-    RowBox[{
-     RowBox[{"g", " ", 
-      RowBox[{"(", 
-       RowBox[{"e", "+", "Q"}], ")"}]}], "+", 
-     RowBox[{"h", " ", 
-      RowBox[{"(", 
-       RowBox[{"f", "+", "R"}], ")"}]}]}], 
-    RowBox[{
-     RowBox[{"(", 
-      RowBox[{
-       RowBox[{
-        RowBox[{"-", "g"}], " ", "h"}], "+", 
-       RowBox[{
-        RowBox[{"(", 
-         RowBox[{"e", "+", "Q"}], ")"}], " ", 
-        RowBox[{"(", 
-         RowBox[{"f", "+", "R"}], ")"}]}]}], ")"}], " ", 
-     SqrtBox[
-      RowBox[{"1", "+", 
-       FractionBox[
-        SuperscriptBox[
-         RowBox[{"(", 
-          RowBox[{
-           RowBox[{"g", " ", 
-            RowBox[{"(", 
-             RowBox[{"e", "+", "Q"}], ")"}]}], "+", 
-           RowBox[{"h", " ", 
-            RowBox[{"(", 
-             RowBox[{"f", "+", "R"}], ")"}]}]}], ")"}], "2"], 
-        SuperscriptBox[
-         RowBox[{"(", 
-          RowBox[{
-           RowBox[{"g", " ", "h"}], "-", 
-           RowBox[{
-            RowBox[{"(", 
-             RowBox[{"e", "+", "Q"}], ")"}], " ", 
-            RowBox[{"(", 
-             RowBox[{"f", "+", "R"}], ")"}]}]}], ")"}], "2"]]}]]}]], ",", 
-   RowBox[{"Q", "+", "R"}], ",", 
-   RowBox[{"Q", "-", "R"}], ",", 
-   FractionBox[
-    RowBox[{"Abs", "[", 
-     RowBox[{
-      RowBox[{"g", " ", "h"}], "+", 
-      RowBox[{
-       RowBox[{"(", 
-        RowBox[{"e", "+", "Q"}], ")"}], " ", 
-       RowBox[{"(", 
-        RowBox[{"f", "+", "R"}], ")"}]}]}], "]"}], 
-    SqrtBox[
-     RowBox[{
-      RowBox[{"(", 
-       RowBox[{
-        SuperscriptBox["h", "2"], "+", 
-        SuperscriptBox[
-         RowBox[{"(", 
-          RowBox[{"e", "+", "Q"}], ")"}], "2"]}], ")"}], " ", 
-      RowBox[{"(", 
-       RowBox[{
-        SuperscriptBox["g", "2"], "+", 
-        SuperscriptBox[
-         RowBox[{"(", 
-          RowBox[{"f", "+", "R"}], ")"}], "2"]}], ")"}]}]]], ",", 
-   FractionBox[
-    RowBox[{
-     RowBox[{
-      RowBox[{"-", "g"}], " ", 
-      RowBox[{"(", 
-       RowBox[{"e", "+", "Q"}], ")"}]}], "+", 
-     RowBox[{"h", " ", 
-      RowBox[{"(", 
-       RowBox[{"f", "+", "R"}], ")"}]}]}], 
-    RowBox[{
-     SqrtBox[
-      RowBox[{
-       RowBox[{"(", 
-        RowBox[{
-         SuperscriptBox["h", "2"], "+", 
-         SuperscriptBox[
-          RowBox[{"(", 
-           RowBox[{"e", "+", "Q"}], ")"}], "2"]}], ")"}], " ", 
-       RowBox[{"(", 
-        RowBox[{
-         SuperscriptBox["g", "2"], "+", 
-         SuperscriptBox[
-          RowBox[{"(", 
-           RowBox[{"f", "+", "R"}], ")"}], "2"]}], ")"}]}]], " ", 
-     RowBox[{"Sign", "[", 
-      RowBox[{
-       RowBox[{"g", " ", "h"}], "+", 
-       RowBox[{
-        RowBox[{"(", 
-         RowBox[{"e", "+", "Q"}], ")"}], " ", 
-        RowBox[{"(", 
-         RowBox[{"f", "+", "R"}], ")"}]}]}], "]"}]}]]}], "}"}]], "Output",
- CellChangeTimes->{3.728547156355214*^9}]
-}, Open  ]]
+  3.728545746671741*^9}, {3.728545812221484*^9, 3.728545842714699*^9}}]
 }, Open  ]]
 },
-WindowSize->{956, 1058},
+WindowSize->{954, 1058},
 WindowMargins->{{Automatic, 2}, {2, Automatic}},
 FrontEndVersion->"11.0 for Linux x86 (64-bit) (July 28, 2016)",
 StyleDefinitions->"Default.nb"
@@ -305,11 +176,7 @@ Notebook[{
 Cell[CellGroupData[{
 Cell[580, 22, 133, 1, 45, "Subsection"],
 Cell[716, 25, 2124, 60, 231, "Input"],
-Cell[2843, 87, 2329, 69, 256, "Input"],
-Cell[CellGroupData[{
-Cell[5197, 160, 98, 1, 32, "Input"],
-Cell[5298, 163, 3518, 121, 171, "Output"]
-}, Open  ]]
+Cell[2843, 87, 2329, 69, 256, "Input"]
 }, Open  ]]
 }
 ]

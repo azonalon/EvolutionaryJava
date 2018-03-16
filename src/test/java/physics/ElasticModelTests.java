@@ -116,7 +116,7 @@ public class ElasticModelTests {
         double[] nu = new double[] {0.33};
         int[][] indices = new int[][] {{0,1,2}};
         double[] M = new double[] {1,1,1,1,1,1};
-        ElasticModel em = new ElasticModel(vertices1, indices, k, nu, M);
+        ElasticModel em = new ElasticModel(vertices1, indices, k, nu, M, ElasticModel.VENANTKIRCHHOFF);
         for(int i=0; i<vertices1.length; i++) {
             em.x0.set(i, vertices2[i]);
             em.x1.set(i, vertices1[i]);
@@ -124,7 +124,6 @@ public class ElasticModelTests {
         DMatrixRMaj dx = new DMatrixRMaj(vertices3);
         double psi;
 
-        ElasticModel.model = ElasticModel.VENANTKIRCHHOFF;
 
         em.computeElasticForces(em.x1, em.g);
         assertEquals(em.g.toString(), 0, normP2(em.g), 0);
@@ -142,7 +141,11 @@ public class ElasticModelTests {
         );
         assertEquals(em.g, f, 1e-4);
 
-        ElasticModel.model = ElasticModel.NEOHOOKEAN;
+        em = new ElasticModel(vertices1, indices, k, nu, M, ElasticModel.NEOHOOKEAN);
+        for(int i=0; i<vertices1.length; i++) {
+            em.x0.set(i, vertices2[i]);
+            em.x1.set(i, vertices1[i]);
+        }
 
         psi = em.computeElasticForces(em.x0, em.g);
         f = new DMatrixRMaj(new double[][]
@@ -156,6 +159,75 @@ public class ElasticModelTests {
             {{3.0101}, {1.39375}, {-2.58304}, {-1.6322}, {-0.427058}, {0.238451}}
         );
         assertEquals(em.g, f, 1e-4);
+
+        DMatrixRMaj m = new DMatrixRMaj(6,6);
+        for(int i=0; i<6; i++) {
+            dx = new DMatrixRMaj(6, 1);
+            dx.set(i, 0, 1.0);
+            em.computeElasticForceDifferential(em.x0, dx, em.g);
+            for(int j=0; j<6;j++) {
+                // assertEquals(t[i][j], em.g.get(j, 0), 1e-4);
+                // System.out.format("%g %g %d %d\n", t[i][j], em.g.get(j, 0), i, j);
+                m.set(i, j, em.g.get(j, 0));
+            }
+        }
+    }
+
+    @Test
+    public void elasticForcesInvertibleNeoHookean() {
+        double[] vertices1 = new double[] {0, 0, 0, 1, 1, 1};
+        // double[] vertices2 = new double[] {0, -1, 2, 2, 1, -1};
+        double[] vertices2 = new double[] {1.2, 1.1, 0.1, 1.05, 1.06, 1.07};
+        double[][] vertices3 = new double[][] {{-.05}, {.1}, {-.2}, {.3}, {.4}, {.5}};
+        double[] k = new double[] {1.0};
+        double[] nu = new double[] {0.33};
+        int[][] indices = new int[][] {{0,1,2}};
+        double[] M = new double[] {1,1,1,1,1,1};
+        DMatrixRMaj dx = new DMatrixRMaj(vertices3);
+        double psi;
+
+
+        ElasticModel em = new ElasticModel(vertices1, indices, k, nu, M,
+                                            ElasticModel.INVERTIBLE_NEOHOOKEAN);
+        for(int i=0; i<vertices1.length; i++) {
+            em.x0.set(i, vertices2[i]);
+            em.x1.set(i, vertices1[i]);
+        }
+
+        psi = em.computeElasticForces(em.x0, em.g);
+        DMatrixRMaj f = new DMatrixRMaj(new double[][]
+            {{-0.046988}, {-4.7444}, {0.420897}, {-0.681655}, {-0.373909},  {5.42606}}
+        );
+        assertEquals(1.68113, psi, 1e-4);
+        assertEquals(em.g, f, 1e-4);
+        double [][] t = new double [][] {{-0.356551, 0.646852, 0.506009, -4.82607, -0.149458,
+                          4.17922}, {0.646852, -6.77856, 4.19242, -0.872466, -4.83927,
+                          7.65102}, {0.506009, 4.19242, -0.911141, -0.133457,
+                          0.405132, -4.05896}, {-4.82607, -0.872466, -0.133457, -0.417634,
+                          4.95953, 1.2901}, {-0.149458, -4.83927, 0.405132,
+                          4.95953, -0.255674, -0.120252}, {4.17922, 7.65102, -4.05896,
+                          1.2901, -0.120252, -8.94112}};
+
+        DMatrix2x2 F = new DMatrix2x2(0.96,-1.1,0.02,-0.05);
+        DMatrix2x2 dF = new DMatrix2x2(0.05,-0.07,-0.07,0.02);
+        DMatrix2x2 dP = new DMatrix2x2();
+        DMatrix2x2 t1 = new DMatrix2x2(-0.163915, -0.675827, -1.51878, -1.19337);
+        InvertibleNeoHookeanModel neo = new InvertibleNeoHookeanModel(0.3);
+        neo.computeStressDifferential(F, dF, 0.729766, 0.37594, dP);
+        assertEquals(t1, dP, 0.0001);
+
+
+        DMatrixRMaj m = new DMatrixRMaj(6,6);
+        for(int i=0; i<6; i++) {
+            dx = new DMatrixRMaj(6, 1);
+            dx.set(i, 0, 1.0);
+            em.computeElasticForceDifferential(em.x0, dx, em.g);
+            for(int j=0; j<6;j++) {
+                assertEquals(t[i][j], em.g.get(j, 0), 1e-4);
+                // System.out.format("%g %g %d %d\n", t[i][j], em.g.get(j, 0), i, j);
+                m.set(i, j, em.g.get(j, 0));
+            }
+        }
     }
 
     @Test

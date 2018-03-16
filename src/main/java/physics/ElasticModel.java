@@ -4,6 +4,10 @@ import static org.ejml.EjmlUnitTests.*;
 import static org.ejml.dense.row.CommonOps_DDRM.*;
 import static org.ejml.dense.fixed.CommonOps_DDF2.*;
 import static main.Main.DEVEL;
+import static util.Math.invertTranspose;
+import static util.Math.add;
+import static util.Math.str;
+// import static physics.InvertibleNeoHookeanModel;
 /**
  * Finite Element elasticity model.
  */
@@ -15,7 +19,10 @@ public class ElasticModel extends ImplicitODESolver {
     final static DMatrix2x2 id = new DMatrix2x2(1,0,0,1);
     static final int NEOHOOKEAN = 0;
     static final int VENANTKIRCHHOFF = 1;
-    static int model = NEOHOOKEAN;
+    static final int INVERTIBLE_NEOHOOKEAN = 2;
+    static final double invertibleEpsilon = 0.3;
+    InvertibleNeoHookeanModel neo;
+    private int model = -1;
     int[][] Te; // nx3 indices for each triangle into point vector
     double[] W; // reference triangle volumes
     double[] mu; // first lame coefficient for each triangle
@@ -26,27 +33,15 @@ public class ElasticModel extends ImplicitODESolver {
 
     }
 
-    public static final boolean invertTranspose( DMatrix2x2 a , DMatrix2x2 inv ) {
-        double scale = 1.0/elementMaxAbs(a);
-
-        double a11 = a.a11*scale;
-        double a12 = a.a12*scale;
-        double a21 = a.a21*scale;
-        double a22 = a.a22*scale;
-
-        double m11 = a22;
-        double m12 = -( a21);
-        double m21 = -( a12);
-        double m22 = a11;
-
-        double det = (a11*m11 + a12*m12)/scale;
-
-        inv.a11 = m11/det;
-        inv.a21 = m21/det;
-        inv.a12 = m12/det;
-        inv.a22 = m22/det;
-
-        return !Double.isNaN(det) && !Double.isInfinite(det);
+    /**
+     * Generates a finite element elastic model solver.
+     * Vertices are stored in a single vector (x1, y1, x2, y2..., xn, yn)
+     * triangle indices are ((t11, t12, t13), (t21, t22, t23), ..., (tm1, tm2, tm3))
+     * the tij specify offsets to the x coordinates of the vertex stored in vertices
+     */
+    public ElasticModel(double[] vertices, int[][] triangles,
+                        double[] k, double[] nu, double[] M) {
+        this(vertices, triangles, k, nu, M, NEOHOOKEAN);
     }
 
     /**
@@ -56,8 +51,13 @@ public class ElasticModel extends ImplicitODESolver {
      * the tij specify offsets to the x coordinates of the vertex stored in vertices
      */
     public ElasticModel(double[] vertices, int[][] triangles,
-                        double[] k, double[] nu, double[] M) {
+                        double[] k, double[] nu, double[] M, int model) {
         super(vertices.length);
+        assert model <= 2 && model >= 0;
+        this.model = model;
+        if(this.model == INVERTIBLE_NEOHOOKEAN) {
+            neo = new InvertibleNeoHookeanModel(invertibleEpsilon);
+        }
         m = triangles.length;
         n = vertices.length; // dimension of parameter space
         this.Te = new int[m][3];
@@ -129,8 +129,10 @@ public class ElasticModel extends ImplicitODESolver {
             mult(temp2x2A, Bm[l], temp2x2B);
             if(model == NEOHOOKEAN)
                 stressEnergy += W[l]*neoHookeanStress(temp2x2B, lambda[l], mu[l], temp2x2A);
-            else
+            else if(model == VENANTKIRCHHOFF)
                 stressEnergy += W[l]*venantPiolaStress(temp2x2B, lambda[l], mu[l], temp2x2A);
+            else
+                stressEnergy += W[l]*neo.computeStressTensor(temp2x2B, lambda[l], mu[l], temp2x2A);
             multTransB(temp2x2A, Bm[l], temp2x2B);
             addForceMatrixToVector(temp2x2B, dest, i, j, k, l);
         }
@@ -170,9 +172,6 @@ public class ElasticModel extends ImplicitODESolver {
         return psi;
     }
 
-    static String str(DMatrix2x2 m) {
-        return String.format("((%g, %g), (%g, %g))", m.a11, m.a12, m.a21, m.a22);
-    }
 
     final double neoHookeanStress(DMatrix2x2 F,
                                  double lambda, double mu,
@@ -220,13 +219,6 @@ public class ElasticModel extends ImplicitODESolver {
         multAdd(F, temp2x2P, destDP);
     }
 
-    static final void add(double a, DMatrix2x2 A, double b, DMatrix2x2 B,
-                     DMatrix2x2 dest) {
-        dest.a11 = a * A.a11 + b * B.a11;
-        dest.a12 = a * A.a12 + b * B.a12;
-        dest.a21 = a * A.a21 + b * B.a21;
-        dest.a22 = a * A.a22 + b * B.a22;
-    }
 
     final double computeForce(DMatrixRMaj x, DMatrixRMaj dest) {
         return computeElasticForces(x, dest);
@@ -262,8 +254,10 @@ public class ElasticModel extends ImplicitODESolver {
             mult(temp2x2B, Bm[l], dF);
             if(model == NEOHOOKEAN)
                 neoHookeanStressDifferential(F, dF, lambda[l], mu[l], dP);
-            else
+            else if(model == VENANTKIRCHHOFF)
                 venantPiolaStressDifferential(F, dF, lambda[l], mu[l], dP);
+            else
+                neo.computeStressDifferential(F, dF, lambda[l], mu[l], dP);
             multTransB(dP, Bm[l], temp2x2B);
             addForceMatrixToVector(temp2x2B, dest, i, j, k, l);
         }
