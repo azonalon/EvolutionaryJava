@@ -51,11 +51,14 @@ public class ElasticModel extends ImplicitODESolver {
      * the tij specify offsets to the x coordinates of the vertex stored in vertices
      */
     public ElasticModel(double[] vertices, int[][] triangles,
-                        double[] k, double[] nu, double[] M, int model) {
+                        double[] k, double[] nu, double[] M, int model, Object... args) {
         super(vertices.length);
         assert model <= 2 && model >= 0;
         this.model = model;
         if(this.model == INVERTIBLE_NEOHOOKEAN) {
+            if(args.length == 1) {
+                neo = new InvertibleNeoHookeanModel((Double)args[0]);
+            }
             neo = new InvertibleNeoHookeanModel(invertibleEpsilon);
         }
         m = triangles.length;

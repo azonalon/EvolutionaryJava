@@ -177,7 +177,7 @@ abstract class ImplicitODESolver {
         double dPhi1 = dPhi;
         double c1  = 1e-2;
         double c2  = 1e-2;
-        // scanLineToFile(2*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, iNewton));
+        // scanLineToFile(5*alpha, 100, String.format("scanline_%04.4f_%02d.dat", t, iNewton));
         int j = 1;
         // lineSearchStep(alpha);
         if(DEVEL) log.debug("Line search start.");
@@ -373,7 +373,7 @@ abstract class ImplicitODESolver {
                 return;
             }
             if(DEVEL) {
-                if (phi >= phiOld) {
+                if (phi >= phiOld*1.2) {
                     assertTrue(
                         String.format("Energy minimization did not converge!"+
                                       "phi=%g, phiOld=%g\n",

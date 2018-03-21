@@ -188,7 +188,7 @@ public class ElasticModelTests {
 
 
         ElasticModel em = new ElasticModel(vertices1, indices, k, nu, M,
-                                            ElasticModel.INVERTIBLE_NEOHOOKEAN);
+                                            ElasticModel.INVERTIBLE_NEOHOOKEAN, 0.3);
         for(int i=0; i<vertices1.length; i++) {
             em.x0.set(i, vertices2[i]);
             em.x1.set(i, vertices1[i]);
@@ -391,8 +391,15 @@ public class ElasticModelTests {
         //     System.out.println();
         // }
     }
+    void saveIndices(Path path, int[][] indices) throws IOException {
+        BufferedWriter w = Files.newBufferedWriter(path);
+        for(int[] face: indices) {
+            w.write(String.format("% 4d % 4d % 4d\n", face[0], face[1], face[2]));
+        }
+        w.close();
+    }
 
-    void saveIndices(Path path, Vector<int[]> indices) throws IOException {
+    void saveIndices(Path path, Iterable<int[]> indices) throws IOException {
         BufferedWriter w = Files.newBufferedWriter(path);
         for(int[] face: indices) {
             w.write(String.format("% 4d % 4d % 4d\n", face[0], face[1], face[2]));
@@ -402,14 +409,85 @@ public class ElasticModelTests {
 
     @Test
     public void ball() {
+        double nuV = 0.4;
+        double kV =  50.0;
+        ballSimulation(ElasticModel.INVERTIBLE_NEOHOOKEAN, kV, nuV);
+    }
+
+    @Test
+    public void triangleInversion() {
+        double nuV = 0.3;
+        double kV =  0.5;
+        try {
+            double[] vertices = new double[] {0, 0, 1, 0, 0, 1};
+            int[][] indices = new int[][] {{0,1,2}};
+
+            double[] k = new double[] {kV} ;
+            double[] nu = new double[] {nuV} ;
+            double[] M = new double[] {1,1,1,1,1,1};
+            ElasticModel em = new ElasticModel(vertices, indices,
+                                               k, nu, M,
+                                               ElasticModel.INVERTIBLE_NEOHOOKEAN,
+                                               0.7);
+            em.x1.set(0, 0, 1);
+            em.x1.set(1, 0, 1);
+            em.x0.set(em.x1);
+            em.x2.set(em.x1);
+            System.out.println(em.x0);
+            System.out.println(em.x1);
+            System.out.println(em.x2);
+
+            double dt=0.01, t=0;
+            em.kDamp = 0.3;
+            ImplicitODESolver.dt = dt;
+            if(Files.notExists(fDir)) {
+                Files.createDirectories(fDir);
+            }
+            saveIndices(fDir.resolve("triangle.indices"), indices);
+            BufferedWriter w = Files.newBufferedWriter(
+                fDir.resolve("triangle.dat")
+            );
+            for(int j=0; t<50; j++) {
+                w.write(String.format("% 8.4f", t));
+                for(int i=0; i<em.x0.numRows; i++) {
+                    w.write(String.format(" % 8.4f ", em.x0.get(i)));
+                }
+                if(t < 5) {
+                    em.fExt.set(0, 0, 0);
+                    em.fExt.set(1, 0, 0);
+                    em.fExt.set(2, 0, -0);
+                    em.fExt.set(3, 0, 0);
+                    em.fExt.set(4, 0, 0);
+                    em.fExt.set(5, 0, -0);
+                }
+                else {
+                    em.fExt.set(0, 0, 0);
+                    em.fExt.set(1, 0, 0);
+                    em.fExt.set(2, 0, 0);
+                    em.fExt.set(3, 0, 0);
+                    em.fExt.set(4, 0, 0);
+                    em.fExt.set(5, 0, 0);
+                }
+                w.write("\n");
+                em.implicitEulerStep();
+                t+=dt + 0*j;
+                ImplicitODESolver.t = t;
+            }
+            w.close();
+        }
+        catch(IOException e) {
+            System.out.println("Error in File IO " + e);
+        }
+
+    }
+
+    public void ballSimulation(int model, double kV, double nuV) {
         try {
             Vector<double[]> vertices = new Vector<double[]>();
             Vector<int[]> indices = new Vector<int[]>();
             readObj(Paths.get("src/test/resources/physics/ball.obj"),
             vertices, indices);
 
-            double nuV = 0.33;
-            double kV =  200;
             double[] k = new double[indices.size()] ;
             double[] nu = new double[indices.size()] ;
             double[] M = new double[vertices.size()*2] ;
@@ -418,7 +496,7 @@ public class ElasticModelTests {
             Arrays.fill(M, 1);
             ElasticModel em = new ElasticModel(flatten(vertices.toArray(new double[0][])),
                                                indices.toArray(new int[0][]),
-                                               k, nu, M);
+                                               k, nu, M, model, 0.7);
             em.x0.set(em.x1);
             em.x2.set(em.x1);
 
