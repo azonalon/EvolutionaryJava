@@ -297,7 +297,7 @@ public class ElasticModelTests {
                 w.write(String.format("% 8.4f", em.dampPotential));
                 w.write("\n");
                 em.implicitEulerStep();
-                t+=dt;
+                t+=dt + 0*j;
                 ImplicitODESolver.t = t;
             }
             w.close();
@@ -330,7 +330,7 @@ public class ElasticModelTests {
                 Files.createDirectories(fDir);
             }
             BufferedWriter w = Files.newBufferedWriter(fDir.resolve("backwardEulerTestTwoTriangle.dat"));
-            for(int j=0; t<10; j++) {
+            for(int j=0; t<10+0*j; j++) {
                 w.write(String.format("% 8.4f", t));
                 for(int i=0; i<vertices.length; i++) {
                     w.write(String.format(" % 8.4f ", em.x0.get(i)));
@@ -563,7 +563,7 @@ public class ElasticModelTests {
                 Files.createDirectories(fDir);
             }
             BufferedWriter w = Files.newBufferedWriter(fDir.resolve("simpleForwardEuler.dat"));
-            for(int j=0; t<100; j++) {
+            for(int j=0; t<100 + 0*j; j++) {
                 w.write(String.format("% 8.4f", t));
                 for(int i=0; i<vertices.length; i++) {
                     w.write(String.format(" % 8.4f ", em.x0.get(i)));

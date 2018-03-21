@@ -9,10 +9,7 @@ import org.junit.rules.*;
 import static util.PrettyPrint.printGrid;
 import java.nio.file.*;
 import static org.junit.Assert.*;
-import static physics.Cell.dt;
-import static physics.Cell.t;
 import static util.Math.*;
-import static physics.CellCulture.*;
 import java.util.function.*;
 
 public class PerformanceTests

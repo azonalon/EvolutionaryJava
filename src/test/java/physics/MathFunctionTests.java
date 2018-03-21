@@ -4,10 +4,7 @@ import org.junit.Test;
 import org.junit.Rule;
 import org.junit.rules.*;
 import static org.junit.Assert.*;
-import static physics.SoftBody.*;
 import static java.lang.Math.PI;
-import static physics.Cell.dt;
-import static physics.Cell.t;
 import static util.Math.*;
 import org.ejml.data.*;
 
