@@ -29,7 +29,7 @@ public class Window {
         return height != 0 ? (float)width/(float)height : 1;
     }
     private void setCoreVersion() {
-    	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,4);// use opengl 3.3
+    	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,4);// use opengl 4.5
     	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,5);
     	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -83,7 +83,7 @@ public class Window {
         glfwSetWindowSizeCallback(ID, new GLFWWindowSizeCallback() {
             @Override
             public void invoke(long window, int w, int h) {
-                System.out.println("Window width and height " + w + "x" + h);
+                // System.out.println("Window width and height " + w + "x" + h);
                 // glfwSetWindowSize(window, w, h);
                 glViewport(0, 0, w, h);
                 width = w;

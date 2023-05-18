@@ -409,8 +409,8 @@ public class ElasticModelTests {
 
     @Test
     public void ball() {
-        double nuV = 0.4;
-        double kV =  50.0;
+        double nuV = 0.3;
+        double kV =  1000.0;
         ballSimulation(ElasticModel.INVERTIBLE_NEOHOOKEAN, kV, nuV);
     }
 
@@ -496,7 +496,7 @@ public class ElasticModelTests {
             Arrays.fill(M, 1);
             ElasticModel em = new ElasticModel(flatten(vertices.toArray(new double[0][])),
                                                indices.toArray(new int[0][]),
-                                               k, nu, M, model, 0.7);
+                                               k, nu, M, model, 0.3);
             em.x0.set(em.x1);
             em.x2.set(em.x1);
 
